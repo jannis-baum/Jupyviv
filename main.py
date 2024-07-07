@@ -1,6 +1,17 @@
-from pprint import pprint
+import argparse
+import time
 
-from src.kernel import Kernel
+from src.sync import JupySync
 
-with Kernel() as k:
-    pprint(k.execute('print("Hello World!")'))
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('notebook', type=str)
+    args = parser.parse_args()
+
+    with JupySync(args.notebook) as jupy_sync:
+        while True:
+            try:
+                time.sleep(1)
+            except KeyboardInterrupt:
+                break
