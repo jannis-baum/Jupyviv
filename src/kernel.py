@@ -12,7 +12,7 @@ def _dsafe(d, *k):
 class Kernel:
     _output_msg_types = ['execute_result', 'display_data', 'stream', 'error']
 
-    def __init__(self):
+    def __enter__(self):
         self._km = KernelManager()
         self._km.start_kernel()
 
@@ -20,7 +20,6 @@ class Kernel:
         self._kc.start_channels()
         self._kc.wait_for_ready()
 
-    def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
