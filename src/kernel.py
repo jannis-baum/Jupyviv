@@ -1,3 +1,5 @@
+import logging
+
 from jupyter_client.manager import KernelManager
 
 # safely access d which may or may not be a dictionary at k which may be a key
@@ -13,12 +15,14 @@ class Kernel:
     _output_msg_types = ['execute_result', 'display_data', 'stream', 'error']
 
     def __enter__(self):
+        logging.info('Starting kernel')
         self._km = KernelManager()
         self._km.start_kernel()
 
         self._kc = self._km.client()
         self._kc.start_channels()
         self._kc.wait_for_ready()
+        logging.info('Kernel ready')
 
         return self
 

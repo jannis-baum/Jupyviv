@@ -1,4 +1,5 @@
 import argparse
+import logging
 import time
 
 from src.sync import JupySync
@@ -7,7 +8,10 @@ from src.sync import JupySync
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('notebook', type=str)
+    parser.add_argument('--log', type=str, default='WARNING', help='Logging level')
     args = parser.parse_args()
+
+    logging.basicConfig(level=args.log)
 
     with JupySync(args.notebook) as jupy_sync:
         while True:
