@@ -80,7 +80,7 @@ class JupySync():
                 raise CellIndexError(i)
             return _multiline_string(cells[i]['source'])
 
-    def set_cell_exec_data(self, i: int, exec_count: int, outputs: list):
+    def set_cell_exec_data(self, i: int, exec_count: int | None, outputs: list):
         with open(self.nb_copy, 'r') as fp:
             nb = json.load(fp)
             if i >= len(nb['cells']):
