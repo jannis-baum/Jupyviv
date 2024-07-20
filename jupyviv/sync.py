@@ -22,7 +22,7 @@ class JupySync():
             raise ValueError('Notebook must have .ipynb extension')
 
         self.nb_original = path
-        temp = ''.join(path.split('.ipynb')[:-1]) + '.jupysync'
+        temp = ''.join(path.split('.ipynb')[:-1]) + '.jupyviv'
         self.nb_copy = temp + '.ipynb'
         self.py = temp + '.py'
         self.py_abs = os.path.abspath(self.py)
