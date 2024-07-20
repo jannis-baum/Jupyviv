@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import shutil
@@ -7,6 +8,11 @@ from jupytext.cli import jupytext as jupytext_cli
 
 def _jupytext(*args: str):
     jupytext_cli(['--quiet', *args])
+
+def _multiline_string(s: str | list[str]) -> str:
+    if isinstance(s, str):
+        return s
+    return '\n'.join(s)
 
 class JupySync():
     def __init__(self, path):
@@ -61,3 +67,11 @@ class JupySync():
         # copy synced notebook to original, remove metadata
         shutil.copy(self.nb_copy, self.nb_original)
         _jupytext(self.nb_original, '--update-metadata', '{"jupytext":null}')
+
+    def code_for_cell_at_line(self, line: int) -> str | None:
+        if line in self.line2cell:
+            return None
+        with open(self.nb_copy, 'r') as fp:
+            nb = json.load(fp)
+            cell = nb['cells'][self.line2cell[line]]
+            return _multiline_string(cell['source'])
