@@ -2,10 +2,10 @@ import argparse
 import logging
 import time
 
-from src.sync import JupySync
+from jupyviv.sync import JupySync
 
 
-if __name__ == '__main__':
+def cli():
     parser = argparse.ArgumentParser()
     parser.add_argument('notebook', type=str)
     parser.add_argument('--log', type=str, default='WARNING', help='Logging level')
