@@ -32,6 +32,7 @@ class JupySync():
         # metadata to the original and/or version control
         shutil.copy(self.nb_original, self.nb_copy)
         _jupytext('--set-formats', 'ipynb,py:percent', self.nb_copy)
+        self.sync()
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
