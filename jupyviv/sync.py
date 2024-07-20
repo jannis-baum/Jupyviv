@@ -14,6 +14,10 @@ def _multiline_string(s: str | list[str]) -> str:
         return s
     return '\n'.join(s)
 
+class CellIndexError(IndexError):
+    def __init__(self, i: int):
+        super().__init__(f'Cell {i} out of bounds')
+
 class JupySync():
     def __init__(self, path):
         if not os.path.exists(path):
@@ -69,10 +73,19 @@ class JupySync():
         shutil.copy(self.nb_copy, self.nb_original)
         _jupytext(self.nb_original, '--update-metadata', '{"jupytext":null}')
 
-    def code_for_cell_at_line(self, line: int) -> str | None:
-        if line in self.line2cell:
-            return None
+    def code_for_cell(self, i: int) -> str:
+        with open(self.nb_copy, 'r') as fp:
+            cells = json.load(fp)['cells']
+            if i >= len(cells):
+                raise CellIndexError(i)
+            return _multiline_string(cells[i]['source'])
+
+    def set_cell_exec_data(self, i: int, exec_count: int, outputs: list):
         with open(self.nb_copy, 'r') as fp:
             nb = json.load(fp)
-            cell = nb['cells'][self.line2cell[line]]
-            return _multiline_string(cell['source'])
+            if i >= len(nb['cells']):
+                raise CellIndexError(i)
+        nb['cells'][i]['execution_count'] = exec_count
+        nb['cells'][i]['outputs'] = outputs
+        with open(self.nb_copy, 'w') as fp:
+            json.dump(nb, fp, indent=2)
