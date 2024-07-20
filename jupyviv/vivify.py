@@ -3,7 +3,10 @@ import subprocess
 
 import requests
 
-viv_port = os.environ.get('VIV_PORT', 31622)
+try:
+    viv_port = int(os.environ.get('VIV_PORT', ''))
+except:
+    viv_port = 31622
 viv_url = f'http://localhost:{viv_port}'
 
 def viv_open(file: str):
