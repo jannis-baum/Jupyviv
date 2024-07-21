@@ -1,11 +1,15 @@
 import sys
 from typing import Callable
 
+from jupyviv.logs import get_logger
+
 type Handler = Callable[[list[str]], None]
 
 class JupyVivError(Exception):
     def __init__(self, message: str):
         super().__init__(message)
+
+_logger = get_logger(__name__)
 
 def _output(i: int, message: str, is_error: bool = False):
     print(f'[{i}]: {"ERROR: " if is_error else ""}{message}')
@@ -14,19 +18,44 @@ def _output(i: int, message: str, is_error: bool = False):
 def _error(i: int, message: str):
     _output(i, message, is_error=True)
 
-def run(handlers: dict[str, Handler]):
-    for i, line in enumerate(sys.stdin):
-        try:
-            args = line.split()
-            if len(args) == 0:
-                continue
+# interrupt mode flushes out any remaining input, e.g. when the kernel should
+# be interrupted all additional commands are ignored
+# returns (should_continue, last_line)
+def _interrupt_mode(start_line: int) -> tuple[bool, int]:
+    i = start_line - 1
+    try:
+        for line in sys.stdin:
+            i += 1
+            if line.strip() == 'continue':
+                return True, i
+    except KeyboardInterrupt:
+        return False, i
+    return False, i
 
-            command = args[0]
-            if command not in handlers:
-                _error(i, f'Unknown command: {command}')
-                continue
+def run(handlers: dict[str, Handler], start_line: int = 1):
+    i = start_line - 1
+    try:
+        for line in sys.stdin:
+            i += 1
+            try:
+                args = line.split()
+                if len(args) == 0:
+                    continue
 
-            handlers[command](args[1:])
-            _output(i, 'Done')
-        except JupyVivError as e:
-            _error(i, str(e))
+                command = args[0]
+                if command not in handlers:
+                    _error(i, f'Unknown command: {command}')
+                    continue
+
+                handlers[command](args[1:])
+                _output(i, 'Done')
+            except JupyVivError as e:
+                _error(i, str(e))
+    except KeyboardInterrupt:
+        _logger.info('Entering interrupt mode, type "continue" to resume')
+        should_continue, i = _interrupt_mode(i)
+        if not should_continue:
+            _logger.info('Interrupted again, exiting')
+            return
+        _logger.info('Exiting interrupt mode, resuming')
+        return run(handlers, i)
