@@ -12,9 +12,12 @@ def setup_endpoints(
     reload: Callable[[], None]
 ) -> dict[str, Handler]:
 
-    def sync(_: list[str]):
-        jupy_sync.sync()
+    def _sync(script: bool):
+        jupy_sync.sync(script)
         reload()
+
+    def sync(_: list[str]):
+        _sync(script=True)
 
     def run(args: list[str]):
         try:
@@ -27,10 +30,15 @@ def setup_endpoints(
             raise JupyVivError('Invalid line number')
 
         cell_i = jupy_sync.line2cell[line_i]
+
+        jupy_sync.set_cell_exec_data(cell_i, None, [])
+        _sync(script=False)
+
         code = jupy_sync.code_for_cell(cell_i)
         exec_count, outputs = kernel.execute(code)
+
         jupy_sync.set_cell_exec_data(cell_i, exec_count, outputs)
-        sync([])
+        _sync(script=False)
 
     return {
         'sync': sync,
