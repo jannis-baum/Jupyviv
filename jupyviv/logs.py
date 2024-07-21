@@ -1,0 +1,24 @@
+import logging
+import sys
+
+_registered_handlers = set[logging.StreamHandler]()
+
+def set_loglevel(level: str | int):
+    for handler in _registered_handlers:
+        handler.setLevel(level)
+
+# make loggers always output to stderr
+def get_logger(name: str) -> logging.Logger:
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
+
+    stderr_handler = logging.StreamHandler(sys.stderr)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    stderr_handler.setFormatter(formatter)
+    logger.addHandler(stderr_handler)
+    _registered_handlers.add(stderr_handler)
+
+    # ensure no handlers are added that output to stdout
+    logger.propagate = False
+
+    return logger

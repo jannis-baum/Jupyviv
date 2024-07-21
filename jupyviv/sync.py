@@ -1,10 +1,13 @@
 import json
-import logging
 import os
 import shutil
 
 from jupytext.cell_reader import BaseCellReader
 from jupytext.cli import jupytext as jupytext_cli
+
+from jupyviv.logs import get_logger
+
+_logger = get_logger(__name__)
 
 def _jupytext(*args: str):
     jupytext_cli(['--quiet', *args])
@@ -43,7 +46,7 @@ class JupySync():
         os.remove(self.py)
 
     def sync(self):
-        logging.info(f'Syncing')
+        _logger.info(f'Syncing')
 
         # wrap BaseCellReader.read to save line numbers for each cell
         self.line2cell = list[int]()

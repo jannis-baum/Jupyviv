@@ -1,6 +1,8 @@
-import logging
-
 from jupyter_client.manager import KernelManager
+
+from jupyviv.logs import get_logger
+
+_logger = get_logger(__name__)
 
 # safely access d which may or may not be a dictionary at k which may be a key
 # or a list of keys for nested dictionaries
@@ -15,14 +17,14 @@ class Kernel:
     _output_msg_types = ['execute_result', 'display_data', 'stream', 'error']
 
     def __enter__(self):
-        logging.info('Starting kernel')
+        _logger.info('Starting kernel')
         self._km = KernelManager()
         self._km.start_kernel()
 
         self._kc = self._km.client()
         self._kc.start_channels()
         self._kc.wait_for_ready()
-        logging.info('Kernel ready')
+        _logger.info('Kernel ready')
 
         return self
 
