@@ -29,7 +29,6 @@ class JupySync():
         temp = ''.join(path.split('.ipynb')[:-1]) + '.jupyviv'
         self.nb_copy = temp + '.ipynb'
         self.py = temp + '.py'
-        self.py_abs = os.path.abspath(self.py)
 
     def __enter__(self):
         # we work with a copied notebook for syncing to avoid adding jupytext
