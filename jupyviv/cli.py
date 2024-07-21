@@ -1,12 +1,11 @@
 import argparse
 
-from bottle import run
-
-from jupyviv.app import setup_bottle
+from jupyviv.communication import run
+from jupyviv.endpoints import setup_endpoints
 from jupyviv.kernel import Kernel
-from jupyviv.sync import JupySync
-from jupyviv.vivify import viv_open, viv_port, viv_reload
 from jupyviv.logs import set_loglevel
+from jupyviv.sync import JupySync
+from jupyviv.vivify import viv_open, viv_reload
 
 
 def cli():
@@ -19,5 +18,5 @@ def cli():
 
     with JupySync(args.notebook) as jupy_sync, Kernel() as kernel:
         viv_open(args.notebook)
-        app = setup_bottle(jupy_sync, kernel, lambda: viv_reload(args.notebook))
-        run(app, host='localhost', port=viv_port + 1)
+        endpoints = setup_endpoints(jupy_sync, kernel, lambda: viv_reload(args.notebook))
+        run(endpoints)
