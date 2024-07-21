@@ -2,11 +2,16 @@
 
 from typing import Callable
 
-from jupyviv.communication import Handler
+from jupyviv.communication import Handler, JupyVivError
 from jupyviv.kernel import Kernel
 from jupyviv.sync import JupySync
 
-def setup_endpoints(jupy_sync: JupySync, kernel: Kernel, reload: Callable[[], None]) -> dict[str, Handler]:
+def setup_endpoints(
+    jupy_sync: JupySync,
+    kernel: Kernel,
+    reload: Callable[[], None]
+) -> dict[str, Handler]:
+
     def sync(_: list[str]):
         jupy_sync.sync()
         reload()
@@ -19,7 +24,7 @@ def setup_endpoints(jupy_sync: JupySync, kernel: Kernel, reload: Callable[[], No
             if line_i < 0 or line_i >= len(jupy_sync.line2cell):
                 raise ValueError
         except ValueError:
-            raise ValueError('Invalid line number')
+            raise JupyVivError('Invalid line number')
 
         cell_i = jupy_sync.line2cell[line_i]
         code = jupy_sync.code_for_cell(cell_i)
