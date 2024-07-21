@@ -46,9 +46,7 @@ class JupySync():
         os.remove(self.nb_copy)
         os.remove(self.py)
 
-    def sync(self):
-        _logger.info(f'Syncing')
-
+    def _sync_script(self):
         # wrap BaseCellReader.read to save line numbers for each cell
         self.line2cell = list[int]()
         bcr_read = getattr(BaseCellReader, 'read')
@@ -71,6 +69,10 @@ class JupySync():
 
         # restore BaseCellReader.read
         setattr(BaseCellReader, 'read', bcr_read)
+
+    def sync(self, script: bool = True):
+        _logger.info(f'Syncing {"notebook and script" if script else "notebook"}')
+        if script: self._sync_script()
 
         # copy synced notebook to original, remove metadata
         shutil.copy(self.nb_copy, self.nb_original)
