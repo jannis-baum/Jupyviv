@@ -7,6 +7,7 @@ from jupytext.cli import jupytext as jupytext_cli
 
 from jupyviv.communication import JupyVivError
 from jupyviv.logs import get_logger
+from jupyviv.utils import dsafe
 
 _logger = get_logger(__name__)
 
@@ -28,23 +29,34 @@ class JupySync():
             raise JupyVivError(f'Notebook "{path}" not found')
         if not path.endswith('.ipynb'):
             raise JupyVivError('Notebook must have .ipynb extension')
+        with open(path, 'r') as fp:
+            nb_data = json.load(fp)
+
+            self.format = dsafe(nb_data, 'metadata', 'language_info', 'file_extension')
+            if self.format == None or not isinstance(self.format, str) or not self.format.startswith('.'):
+                raise JupyVivError('Invalid metadata language_info.file_extension')
+            self.format = self.format[1:]
+
+            self.kernel_name = dsafe(nb_data, 'metadata', 'kernelspec', 'name')
+            if self.kernel_name == None or not isinstance(self.kernel_name, str):
+                raise JupyVivError('Invalid metadata kernelspec.name')
 
         self.nb_original = path
         temp = ''.join(path.split('.ipynb')[:-1]) + '.jupyviv'
         self.nb_copy = temp + '.ipynb'
-        self.py = temp + '.py'
+        self.script = f'{temp}.{self.format}'
 
     def __enter__(self):
         # we work with a copied notebook for syncing to avoid adding jupytext
         # metadata to the original and/or version control
         shutil.copy(self.nb_original, self.nb_copy)
-        _jupytext('--set-formats', 'ipynb,py:percent', self.nb_copy)
+        _jupytext('--set-formats', f'ipynb,{self.format}:percent', self.nb_copy)
         self.sync()
         return self
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         os.remove(self.nb_copy)
-        os.remove(self.py)
+        os.remove(self.script)
 
     def _sync_script(self):
         # wrap BaseCellReader.read to save line numbers for each cell
@@ -54,7 +66,7 @@ class JupySync():
             # seek to first cell, header is assigned cell -1
             if len(self.line2cell) == 0:
                 first_line = args[1][0] + '\n'
-                with open(self.py, 'r') as fp:
+                with open(self.script, 'r') as fp:
                     for line in fp.readlines():
                         self.line2cell.append(-1)
                         if line == first_line: break
@@ -65,7 +77,7 @@ class JupySync():
         setattr(BaseCellReader, 'read', bcr_read_wrapper)
 
         # sync to copied notebook
-        _jupytext('--sync', self.py)
+        _jupytext('--sync', self.script)
 
         # restore BaseCellReader.read
         setattr(BaseCellReader, 'read', bcr_read)
