@@ -8,9 +8,12 @@ _logger = get_logger(__name__)
 class Kernel:
     _output_msg_types = ['execute_result', 'display_data', 'stream', 'error']
 
+    def __init__(self, name):
+        self.name = name
+
     def __enter__(self):
         _logger.info('Starting kernel')
-        self._km = KernelManager()
+        self._km = KernelManager(kernel_name=self.name)
         self._km.start_kernel()
 
         self._kc = self._km.client()

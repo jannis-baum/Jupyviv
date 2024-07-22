@@ -18,7 +18,7 @@ def cli():
     set_loglevel(args.log)
 
     try:
-        with JupySync(args.notebook) as jupy_sync, Kernel() as kernel:
+        with JupySync(args.notebook) as jupy_sync, Kernel(jupy_sync.kernel_name) as kernel:
             viv_open(args.notebook)
             endpoints = setup_endpoints(jupy_sync, kernel, lambda: viv_reload(args.notebook))
             run(endpoints)
