@@ -12,6 +12,9 @@ def setup_endpoints(
     reload: Callable[[], None]
 ) -> dict[str, Handler]:
 
+    def get_script(_: list[str]):
+        return jupy_sync.script
+
     def _sync(script: bool):
         jupy_sync.sync(script)
         reload()
@@ -42,5 +45,6 @@ def setup_endpoints(
 
     return {
         'sync': sync,
-        'run': run
+        'run': run,
+        'get_script': get_script,
     }
