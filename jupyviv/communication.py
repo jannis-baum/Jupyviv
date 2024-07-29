@@ -3,7 +3,7 @@ from typing import Callable
 
 from jupyviv.logs import get_logger
 
-type Handler = Callable[[list[str]], None]
+type Handler = Callable[[list[str]], str | None]
 
 class JupyVivError(Exception):
     def __init__(self, message: str):
@@ -47,8 +47,8 @@ def run(handlers: dict[str, Handler], start_line: int = 1):
                     _error(i, f'Unknown command: {command}')
                     continue
 
-                handlers[command](args[1:])
-                _output(i, 'Done')
+                result = handlers[command](args[1:])
+                _output(i, result if result else 'Done')
             except JupyVivError as e:
                 _error(i, str(e))
     except KeyboardInterrupt:
