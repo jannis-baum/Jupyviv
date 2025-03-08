@@ -5,7 +5,8 @@ dynamic = ["version"]
 dependencies = [
     "jupyter_client",
     "jupytext",
-    "requests"
+    "requests",
+    "websockets"
 ]
 requires-python = ">=3.12"
 
