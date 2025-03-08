@@ -1,8 +1,7 @@
 import argparse
 
+from jupyviv.agent.cli import setup_agent_args
 from jupyviv.shared.logs import set_loglevel
-
-type Subparsers = argparse._SubParsersAction[argparse.ArgumentParser]
 
 def cli():
     parser = argparse.ArgumentParser()
@@ -12,6 +11,7 @@ def cli():
     # subparsers are passed to modules to add their own subcommands
     # have to specify 'args.func' to run the subcommand
     subparsers = parser.add_subparsers(help='Subcommand')
+    setup_agent_args(subparsers)
 
     args = parser.parse_args()
 
