@@ -2,7 +2,7 @@ import sys
 from typing import Callable
 
 from jupyviv.shared.logs import get_logger
-from jupyviv.shared.error import JupyVivError
+from jupyviv.shared.errors import JupyVivError
 
 type Handler = Callable[[list[str]], str | None]
 

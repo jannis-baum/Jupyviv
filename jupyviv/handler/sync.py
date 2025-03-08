@@ -5,7 +5,7 @@ import shutil
 from jupytext.cell_reader import BaseCellReader
 from jupytext.cli import jupytext as jupytext_cli
 
-from jupyviv.shared.error import JupyVivError
+from jupyviv.shared.errors import JupyVivError
 from jupyviv.shared.logs import get_logger
 from jupyviv.shared.utils import dsafe
 

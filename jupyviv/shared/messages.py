@@ -1,4 +1,4 @@
-from jupyviv.shared.error import JupyVivError
+from jupyviv.shared.errors import JupyVivError
 
 class MessageFormatError(JupyVivError):
     def __init__(self, message: str):
