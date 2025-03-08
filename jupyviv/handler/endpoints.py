@@ -2,9 +2,10 @@
 
 from typing import Callable
 
-from jupyviv.communication import Handler, JupyVivError
-from jupyviv.kernel import Kernel
-from jupyviv.sync import JupySync
+from jupyviv.agent.kernel import Kernel
+from jupyviv.handler.sync import JupySync
+from jupyviv.handler.transport_editor import Handler
+from jupyviv.shared.error import JupyVivError
 
 def setup_endpoints(
     jupy_sync: JupySync,

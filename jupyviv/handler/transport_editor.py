@@ -1,13 +1,10 @@
 import sys
 from typing import Callable
 
-from jupyviv.logs import get_logger
+from jupyviv.shared.logs import get_logger
+from jupyviv.shared.error import JupyVivError
 
 type Handler = Callable[[list[str]], str | None]
-
-class JupyVivError(Exception):
-    def __init__(self, message: str):
-        super().__init__(message)
 
 _logger = get_logger(__name__)
 

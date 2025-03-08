@@ -1,7 +1,7 @@
 from jupyter_client.manager import KernelManager
 
-from jupyviv.logs import get_logger
-from jupyviv.utils import dsafe
+from jupyviv.shared.logs import get_logger
+from jupyviv.shared.utils import dsafe
 
 _logger = get_logger(__name__)
 
