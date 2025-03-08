@@ -1,3 +1,4 @@
+from jupyter_client.blocking.client import BlockingKernelClient
 from jupyter_client.manager import KernelManager
 
 from jupyviv.shared.logs import get_logger
@@ -13,10 +14,10 @@ class Kernel:
 
     def __enter__(self):
         _logger.info('Starting kernel')
-        self._km = KernelManager(kernel_name=self.name)
+        self._km: KernelManager = KernelManager(kernel_name=self.name)
         self._km.start_kernel()
 
-        self._kc = self._km.client()
+        self._kc: BlockingKernelClient = self._km.client()
         self._kc.start_channels()
         self._kc.wait_for_ready()
         _logger.info('Kernel ready')
@@ -28,8 +29,8 @@ class Kernel:
             self._kc.stop_channels()
         if self._km is not None:
             self._km.shutdown_kernel()
-        self._kc = None
-        self._km = None
+        del self._kc
+        del self._km
 
     # returns execution count & outputs
     def execute(self, code) -> tuple[int | None, list]:
