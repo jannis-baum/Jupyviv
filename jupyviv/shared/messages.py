@@ -1,4 +1,5 @@
-from typing import Callable, TypeVar
+from typing import Awaitable, Callable, TypeVar
+
 from jupyviv.shared.errors import JupyVivError
 
 class MessageFormatError(JupyVivError):
@@ -47,3 +48,14 @@ class MessageHandler:
         if handler is None:
             raise MessageUnknownError(message.command)
         handler(message)
+
+class AsyncMessageHandler:
+    def __init__(self, handlers: dict[str, Callable[[Message], Awaitable[None]]]):
+        self.handlers = handlers
+
+    async def handle(self, message_str: str):
+        message = Message.from_str(message_str)
+        handler = self.handlers.get(message.command)
+        if handler is None:
+            raise MessageUnknownError(message.command)
+        await handler(message)
