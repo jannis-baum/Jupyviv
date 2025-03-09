@@ -1,3 +1,4 @@
+import asyncio
 import json
 from typing import Awaitable, Callable
 
@@ -19,33 +20,37 @@ async def setup_kernel(name: str, send_queue: AsyncMessageQueue) -> tuple[AsyncM
     id_kernel2jupyviv = dict[str, str]()
 
     async def _kernel_loop():
-        while True:
-            msg = await kc.get_iopub_msg()
+        try:
+            while True:
+                msg = await kc.get_iopub_msg()
 
-            kernel_id = str(dsafe(msg, 'parent_header', 'msg_id'))
-            jupyviv_id = id_kernel2jupyviv.get(kernel_id)
-            if jupyviv_id is None:
-                continue
+                kernel_id = str(dsafe(msg, 'parent_header', 'msg_id'))
+                jupyviv_id = id_kernel2jupyviv.get(kernel_id)
+                if jupyviv_id is None:
+                    continue
 
-            msg_type = dsafe(msg, 'msg_type')
-            content = dsafe(msg, 'content')
+                msg_type = dsafe(msg, 'msg_type')
+                content = dsafe(msg, 'content')
 
-            if msg_type == 'status':
-                state = str(dsafe(content, 'execution_state'))
-                await send_queue.put(Message(jupyviv_id, 'status', state))
-                continue
+                if msg_type == 'status':
+                    state = str(dsafe(content, 'execution_state'))
+                    await send_queue.put(Message(jupyviv_id, 'status', state))
+                    continue
 
-            if msg_type == 'execute_input':
-                execution_count = str(dsafe(content, 'execution_count'))
-                await send_queue.put(Message(jupyviv_id, 'execute_input', execution_count))
-                continue
+                if msg_type == 'execute_input':
+                    execution_count = str(dsafe(content, 'execution_count'))
+                    await send_queue.put(Message(jupyviv_id, 'execute_input', execution_count))
+                    continue
 
-            if msg_type in _output_msg_types and type(content) == dict:
-                data = json.dumps({ 'output_type': msg_type, **content })
-                await send_queue.put(Message(jupyviv_id, 'output', data))
-                continue
+                if msg_type in _output_msg_types and type(content) == dict:
+                    data = json.dumps({ 'output_type': msg_type, **content })
+                    await send_queue.put(Message(jupyviv_id, 'output', data))
+                    continue
 
-            _logger.info(f'Received unknown message: {msg_type} with content: {content}')
+                _logger.info(f'Received unknown message: {msg_type} with content: {content}')
+        finally:
+            kc.stop_channels()
+            await km.shutdown_kernel()
 
     async def _execute(message: Message):
         kernel_id = kc.execute(message.args)
