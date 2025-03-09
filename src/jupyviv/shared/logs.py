@@ -9,7 +9,7 @@ def set_loglevel(level: str | int):
 
 # make loggers always output to stderr
 def get_logger(name: str) -> logging.Logger:
-    logger = logging.getLogger(name)
+    logger = logging.getLogger(name.removeprefix('jupyviv.'))
     logger.setLevel(logging.DEBUG)
 
     stderr_handler = logging.StreamHandler(sys.stderr)
