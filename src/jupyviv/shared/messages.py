@@ -15,7 +15,7 @@ class MessageUnknownError(JupyVivError):
 T = TypeVar("T")
 
 class Message:
-    def __init__(self, id: int, command: str, args: str):
+    def __init__(self, id: str, command: str, args: str):
         self.id = id
         self.command = command
         self.args = args
@@ -25,11 +25,7 @@ class Message:
         parts = message_str.split(' ')
         if len(parts) < 2:
             raise MessageFormatError(message_str)
-        try:
-            id = int(parts[0])
-        except ValueError:
-            raise MessageFormatError(message_str)
-        return Message(id, parts[1], ' '.join(parts[2:]))
+        return Message(parts[0], parts[1], ' '.join(parts[2:]))
 
     def to_str(self):
         return ' '.join([str(self.id), self.command, self.args])

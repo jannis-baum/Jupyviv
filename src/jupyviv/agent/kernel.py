@@ -13,7 +13,7 @@ async def setup_kernel(name: str, send_queue: AsyncMessageQueue) -> tuple[AsyncM
     km, kc = await start_new_async_kernel(kernel_name=name)
     _logger.info(f'Kernel ready')
 
-    id_kernel2jupyviv = dict[str, int]()
+    id_kernel2jupyviv = dict[str, str]()
 
     async def _handle_kernel_messages():
         while True:
