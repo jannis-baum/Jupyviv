@@ -3,6 +3,7 @@ import asyncio
 from websockets.asyncio.client import ClientConnection, connect
 from websockets.asyncio.connection import Connection
 from websockets.asyncio.server import ServerConnection, serve
+from websockets.exceptions import ConnectionClosed
 
 from jupyviv.shared.messages import AsyncMessageHandler, AsyncMessageQueue
 from jupyviv.shared.logs import get_logger
@@ -20,15 +21,19 @@ async def _connection_handler(
             try:
                 message = await send_queue.get()
                 await websocket.send(message.to_str())
+            except ConnectionClosed:
+                break
             except Exception as e:
-                _logger.error(e)
+                _logger.error(f'Send error {type(e)}: {e}')
 
     async def _receiver():
         async for message in websocket:
             try:
                 await recv_handler.handle(str(message))
+            except ConnectionClosed:
+                break
             except Exception as e:
-                _logger.error(e)
+                _logger.error(f'Receive error {type(e)}: {e}')
 
     await asyncio.gather(_sender(), _receiver())
 
