@@ -1,6 +1,6 @@
 import argparse
 
-from jupyviv.agent.cli import setup_agent_args
+from jupyviv.agent import setup_agent_args
 from jupyviv.shared.logs import set_loglevel
 
 def cli():
