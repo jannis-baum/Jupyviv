@@ -1,8 +1,15 @@
+from typing import Callable, TypeVar
 from jupyviv.shared.errors import JupyVivError
 
 class MessageFormatError(JupyVivError):
     def __init__(self, message: str):
         super().__init__(f'Invalid message format: {message}')
+
+class MessageUnknownError(JupyVivError):
+    def __init__(self, command: str):
+        super().__init__(f'Unknown command: {command}')
+
+T = TypeVar("T")
 
 class Message:
     def __init__(self, id: int, command: str, args: list[str]):
@@ -11,23 +18,32 @@ class Message:
         self._args = args
 
     @staticmethod
-    def from_str(message: str, *types):
-        parts = message.split(' ')
+    def from_str(message_str: str):
+        parts = message_str.split(' ')
+        if len(parts) < 2:
+            raise MessageFormatError(message_str)
         try:
             id = int(parts[0])
         except ValueError:
-            raise MessageFormatError(message)
-        command = parts[1]
+            raise MessageFormatError(message_str)
+        return Message(id, parts[1], parts[2:])
 
-        raw_args = parts[2:]
-        if len(raw_args) != len(types):
-            raise MessageFormatError(f'{command} expects {len(types)} arguments')
+    def arg(self, index: int, constructor: Callable[[str], T]) -> T:
         try:
-            args = [t(arg) for t, arg in zip(types, raw_args)]
-        except ValueError:
-            raise MessageFormatError(f'{command} expects arguments of types {types}')
-
-        return Message(id, command, args)
+            return constructor(self._args[index])
+        except (ValueError, IndexError):
+            raise MessageFormatError(self.to_str())
 
     def to_str(self):
         return ' '.join([str(self.id), self.command, *self._args])
+
+class MessageHandler:
+    def __init__(self, handlers: dict[str, Callable[[Message], None]]):
+        self.handlers = handlers
+
+    def handle(self, message_str: str):
+        message = Message.from_str(message_str)
+        handler = self.handlers.get(message.command)
+        if handler is None:
+            raise MessageUnknownError(message.command)
+        handler(message)
