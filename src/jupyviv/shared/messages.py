@@ -1,4 +1,6 @@
+import asyncio
 from typing import Awaitable, Callable, TypeVar
+from queue import Queue
 
 from jupyviv.shared.errors import JupyVivError
 
@@ -49,6 +51,8 @@ class MessageHandler:
             raise MessageUnknownError(message.command)
         handler(message)
 
+type MessageQueue = Queue[Message]
+
 class AsyncMessageHandler:
     def __init__(self, handlers: dict[str, Callable[[Message], Awaitable[None]]]):
         self.handlers = handlers
@@ -59,3 +63,5 @@ class AsyncMessageHandler:
         if handler is None:
             raise MessageUnknownError(message.command)
         await handler(message)
+
+type AsyncMessageQueue = asyncio.Queue[Message]

@@ -4,7 +4,7 @@ from websockets.asyncio.client import ClientConnection, connect
 from websockets.asyncio.connection import Connection
 from websockets.asyncio.server import ServerConnection, serve
 
-from jupyviv.shared.messages import AsyncMessageHandler, Message
+from jupyviv.shared.messages import AsyncMessageHandler, AsyncMessageQueue
 from jupyviv.shared.logs import get_logger
 
 _logger = get_logger(__name__)
@@ -13,7 +13,7 @@ _logger = get_logger(__name__)
 async def _connection_handler(
     websocket: Connection,
     recv_handler: AsyncMessageHandler,
-    send_queue: asyncio.Queue[Message]
+    send_queue: AsyncMessageQueue
 ):
     async def _sender():
         while True:
@@ -35,7 +35,7 @@ async def _connection_handler(
 async def run_server(
     port: int,
     recv_handler: AsyncMessageHandler,
-    send_queue: asyncio.Queue[Message]
+    send_queue: AsyncMessageQueue
 ):
     is_connected = False
     async def connection_handler(websocket: ServerConnection):
@@ -58,7 +58,7 @@ async def run_client(
     host: str,
     port: int,
     recv_handler: AsyncMessageHandler,
-    send_queue: asyncio.Queue[Message]
+    send_queue: AsyncMessageQueue
 ):
     async def consumer(websocket: ClientConnection):
         await _connection_handler(websocket, recv_handler, send_queue)
