@@ -18,7 +18,7 @@ async def setup_kernel(name: str, send_queue: AsyncMessageQueue) -> tuple[AsyncM
 
     id_kernel2jupyviv = dict[str, str]()
 
-    async def _handle_kernel_messages():
+    async def _kernel_loop():
         while True:
             msg = await kc.get_iopub_msg()
 
@@ -55,4 +55,4 @@ async def setup_kernel(name: str, send_queue: AsyncMessageQueue) -> tuple[AsyncM
         'execute': _execute
     })
 
-    return (handler, _handle_kernel_messages)
+    return (handler, _kernel_loop)
