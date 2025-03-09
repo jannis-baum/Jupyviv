@@ -5,23 +5,36 @@ from websockets.asyncio.connection import Connection
 from websockets.asyncio.server import ServerConnection, serve
 from websockets.exceptions import ConnectionClosed
 
-from jupyviv.shared.messages import AsyncMessageHandler, AsyncMessageQueue
+from jupyviv.shared.messages import AsyncMessageHandler, AsyncMessageQueue, Message
 from jupyviv.shared.logs import get_logger
 
 _logger = get_logger(__name__)
+
+# wrapper to pass dropped messages by reference for messages that were taken
+# out of queue before disconnect/error
+class _DroppedMessage():
+    def __init__(self):
+        self.message: Message | None = None
 
 # create send/receive handler for server & client
 async def _connection_handler(
     websocket: Connection,
     recv_handler: AsyncMessageHandler,
-    send_queue: AsyncMessageQueue
+    send_queue: AsyncMessageQueue,
+    dropped_message: _DroppedMessage
 ):
     async def _sender():
+        message = None
         while True:
             try:
-                message = await send_queue.get()
+                if dropped_message.message is not None:
+                    message = dropped_message.message
+                    dropped_message.message = None
+                else:
+                    message = await send_queue.get()
                 await websocket.send(message.to_str())
             except ConnectionClosed:
+                dropped_message.message = message
                 break
             except Exception as e:
                 _logger.error(f'Send error {type(e)}: {e}')
@@ -42,6 +55,8 @@ async def run_server(
     recv_handler: AsyncMessageHandler,
     send_queue: AsyncMessageQueue
 ):
+    # message that was dropped due to disconnect or other errors
+    dropped_message = _DroppedMessage()
     is_connected = False
     async def connection_handler(websocket: ServerConnection):
         # restrict to single connection
@@ -52,7 +67,7 @@ async def run_server(
         is_connected = True
         # keep track of connection closing
         try:
-            await _connection_handler(websocket, recv_handler, send_queue)
+            await _connection_handler(websocket, recv_handler, send_queue, dropped_message)
         finally:
             is_connected = False
 
@@ -65,8 +80,10 @@ async def run_client(
     recv_handler: AsyncMessageHandler,
     send_queue: AsyncMessageQueue
 ):
+    # message that was dropped due to disconnect or other errors
+    dropped_message = _DroppedMessage()
     async def consumer(websocket: ClientConnection):
-        await _connection_handler(websocket, recv_handler, send_queue)
+        await _connection_handler(websocket, recv_handler, send_queue, dropped_message)
 
     async with connect(f'ws://{host}:{port}') as websocket:
         await consumer(websocket)
