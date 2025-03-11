@@ -2,11 +2,11 @@ import argparse
 
 from jupyviv.agent import setup_agent_args
 from jupyviv.handler import setup_handler_args
-from jupyviv.shared.logs import set_loglevel
+from jupyviv.shared.logs import set_loglevel, log_levels, default_log_level
 
 def cli():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--log', type=str, default='WARNING', help='Log level')
+    parser.add_argument('--log', choices=log_levels, default=default_log_level, help='Log level')
     parser.print_help
 
     # subparsers are passed to modules to add their own subcommands
