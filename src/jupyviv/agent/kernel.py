@@ -56,8 +56,16 @@ async def setup_kernel(name: str, send_queue: AsyncMessageQueue) -> tuple[AsyncM
         kernel_id = kc.execute(message.args)
         id_kernel2jupyviv[kernel_id] = message.id
 
+    async def _interrupt(_: Message):
+        await km.interrupt_kernel()
+
+    async def _restart(_: Message):
+        await km.restart_kernel()
+
     handler = AsyncMessageHandler({
-        'execute': _execute
+        'execute': _execute,
+        'interrupt': _interrupt,
+        'restart': _restart
     })
 
     return (handler, _kernel_loop)
