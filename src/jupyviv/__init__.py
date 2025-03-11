@@ -1,6 +1,7 @@
 import argparse
 
 from jupyviv.agent import setup_agent_args
+from jupyviv.handler import setup_handler_args
 from jupyviv.shared.logs import set_loglevel
 
 def cli():
@@ -12,6 +13,7 @@ def cli():
     # have to specify 'args.func' to run the subcommand
     subparsers = parser.add_subparsers(help='Subcommand')
     setup_agent_args(subparsers)
+    setup_handler_args(subparsers)
 
     args = parser.parse_args()
 
