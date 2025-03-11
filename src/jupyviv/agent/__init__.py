@@ -14,6 +14,7 @@ async def _main(port: int, kernel_name: str):
         await run_kernel()
     except KeyboardInterrupt:
         server_task.cancel()
+        await server_task
 
 def _cli(args):
     asyncio.run(_main(args.port, args.kernel_name))

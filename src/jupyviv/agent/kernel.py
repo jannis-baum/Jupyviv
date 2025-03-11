@@ -48,6 +48,8 @@ async def setup_kernel(name: str, send_queue: MessageQueue) -> tuple[MessageHand
                     continue
 
                 _logger.info(f'Received unknown message: {msg_type} with content: {content}')
+        except asyncio.CancelledError:
+            pass
         finally:
             kc.stop_channels()
             await km.shutdown_kernel()
