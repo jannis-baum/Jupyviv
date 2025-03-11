@@ -29,7 +29,7 @@ class Message:
     def to_str(self):
         return ' '.join([str(self.id), self.command, self.args])
 
-class AsyncMessageHandler:
+class MessageHandler:
     def __init__(self, handlers: dict[str, Callable[[Message], Awaitable[None]]]):
         self.handlers = handlers
 
@@ -40,4 +40,4 @@ class AsyncMessageHandler:
             raise MessageUnknownError(message.command)
         await handler(message)
 
-type AsyncMessageQueue = asyncio.Queue[Message]
+type MessageQueue = asyncio.Queue[Message]

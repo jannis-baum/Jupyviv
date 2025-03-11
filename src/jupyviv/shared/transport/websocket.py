@@ -5,7 +5,7 @@ from websockets.asyncio.connection import Connection
 from websockets.asyncio.server import ServerConnection, serve
 from websockets.exceptions import ConnectionClosed
 
-from jupyviv.shared.messages import AsyncMessageHandler, AsyncMessageQueue, Message
+from jupyviv.shared.messages import MessageHandler, MessageQueue, Message
 from jupyviv.shared.logs import get_logger
 
 _logger = get_logger(__name__)
@@ -19,8 +19,8 @@ class _DroppedMessage():
 # create send/receive handler for server & client
 async def _connection_handler(
     websocket: Connection,
-    recv_handler: AsyncMessageHandler,
-    send_queue: AsyncMessageQueue,
+    recv_handler: MessageHandler,
+    send_queue: MessageQueue,
     dropped_message: _DroppedMessage
 ):
     async def _sender():
@@ -52,8 +52,8 @@ async def _connection_handler(
 
 async def run_server(
     port: int,
-    recv_handler: AsyncMessageHandler,
-    send_queue: AsyncMessageQueue
+    recv_handler: MessageHandler,
+    send_queue: MessageQueue
 ):
     # message that was dropped due to disconnect or other errors
     dropped_message = _DroppedMessage()
@@ -77,8 +77,8 @@ async def run_server(
 async def run_client(
     host: str,
     port: int,
-    recv_handler: AsyncMessageHandler,
-    send_queue: AsyncMessageQueue
+    recv_handler: MessageHandler,
+    send_queue: MessageQueue
 ):
     # message that was dropped due to disconnect or other errors
     dropped_message = _DroppedMessage()
