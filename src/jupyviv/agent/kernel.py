@@ -5,14 +5,14 @@ from typing import Awaitable, Callable
 from jupyter_client.manager import start_new_async_kernel
 
 from jupyviv.shared.logs import get_logger
-from jupyviv.shared.messages import MessageHandler, MessageQueue, Message
+from jupyviv.shared.messages import MessageHandlerDict, MessageQueue, Message
 from jupyviv.shared.utils import dsafe
 
 _logger = get_logger(__name__)
 _output_msg_types = ['execute_result', 'display_data', 'stream', 'error']
 
 # returns message handler & runner for kernel
-async def setup_kernel(name: str, send_queue: MessageQueue) -> tuple[MessageHandler, Callable[[], Awaitable[None]]]:
+async def setup_kernel(name: str, send_queue: MessageQueue) -> tuple[MessageHandlerDict, Callable[[], Awaitable[None]]]:
     _logger.info(f'Starting kernel {name}')
     km, kc = await start_new_async_kernel(kernel_name=name)
     _logger.info(f'Kernel ready')
@@ -64,10 +64,10 @@ async def setup_kernel(name: str, send_queue: MessageQueue) -> tuple[MessageHand
     async def _restart(_: Message):
         await km.restart_kernel()
 
-    handler = MessageHandler({
+    handlers = {
         'execute': _execute,
         'interrupt': _interrupt,
         'restart': _restart
-    })
+    }
 
-    return (handler, _kernel_loop)
+    return (handlers, _kernel_loop)

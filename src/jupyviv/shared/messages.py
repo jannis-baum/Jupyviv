@@ -29,8 +29,9 @@ class Message:
     def to_str(self):
         return ' '.join([str(self.id), self.command, self.args])
 
+type MessageHandlerDict = dict[str, Callable[[Message], Awaitable[None]]]
 class MessageHandler:
-    def __init__(self, handlers: dict[str, Callable[[Message], Awaitable[None]]]):
+    def __init__(self, handlers: MessageHandlerDict):
         self.handlers = handlers
 
     async def handle(self, message_str: str):
