@@ -2,7 +2,7 @@ import asyncio
 
 from jupyviv.agent.kernel import setup_kernel
 from jupyviv.shared.messages import Message, MessageHandler, MessageQueue
-from jupyviv.shared.transport.websocket import run_server
+from jupyviv.shared.transport.websocket import run_server, default_port
 from jupyviv.shared.utils import Subparsers
 
 async def _main(port: int, kernel_name: str):
@@ -24,5 +24,5 @@ def _cli(args):
 def setup_agent_args(subparsers: Subparsers):
     parser = subparsers.add_parser('agent', help='Run the agent')
     parser.add_argument('kernel_name', type=str, help='Name of the kernel to run')
-    parser.add_argument('--port', type=int, default=8000, help='Port to run the agent on')
+    parser.add_argument('--port', type=int, default=default_port, help='Port to run the agent on')
     parser.set_defaults(func=_cli)

@@ -50,6 +50,8 @@ async def _connection_handler(
 
     await asyncio.gather(_sender(), _receiver())
 
+default_port = 8000
+
 async def run_server(
     port: int,
     recv_handler: MessageHandler,
@@ -75,8 +77,7 @@ async def run_server(
         await server.serve_forever()
 
 async def run_client(
-    host: str,
-    port: int,
+    address: str,
     recv_handler: MessageHandler,
     send_queue: MessageQueue
 ):
@@ -85,5 +86,5 @@ async def run_client(
     async def consumer(websocket: ClientConnection):
         await _connection_handler(websocket, recv_handler, send_queue, dropped_message)
 
-    async with connect(f'ws://{host}:{port}') as websocket:
+    async with connect(f'ws://{address}') as websocket:
         await consumer(websocket)
