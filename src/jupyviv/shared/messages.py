@@ -42,3 +42,5 @@ class MessageHandler:
         await handler(message)
 
 type MessageQueue = asyncio.Queue[Message]
+def new_queue() -> MessageQueue:
+    return asyncio.Queue[Message]()

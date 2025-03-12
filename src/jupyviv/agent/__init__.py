@@ -1,12 +1,12 @@
 import asyncio
 
 from jupyviv.agent.kernel import setup_kernel
-from jupyviv.shared.messages import Message, MessageHandler, MessageQueue
+from jupyviv.shared.messages import MessageHandler, new_queue
 from jupyviv.shared.transport.websocket import run_server, default_port
 from jupyviv.shared.utils import Subparsers
 
 async def _main(port: int, kernel_name: str):
-    send_queue: MessageQueue = asyncio.Queue[Message]()
+    send_queue = new_queue()
     handlers, run_kernel = await setup_kernel(kernel_name, send_queue)
 
     recv_handler = MessageHandler(handlers)
