@@ -60,15 +60,6 @@ class JupySync():
         os.remove(self.nb_copy)
         os.remove(self.script)
 
-    def _modify_cell(self, i: int, f: Callable[[dict], dict]):
-        with open(self.nb_copy, 'r') as fp:
-            nb = json.load(fp)
-        if i >= len(nb['cells']):
-            raise JupyVivCellIndexError(i)
-        nb = f(nb)
-        with open(self.nb_copy, 'w') as fp:
-            json.dump(nb, fp, indent=2)
-
     def _sync_script(self):
         # wrap BaseCellReader.read to save line numbers for each cell
         self.line2cell = list[int]()
@@ -110,20 +101,13 @@ class JupySync():
                 raise JupyVivCellIndexError(i)
             return _multiline_string(cells[i]['source'])
 
-    def set_exec_count(self, cell: int, exec_count: int | None):
-        def f(nb: dict):
-            nb['cells'][cell]['execution_count'] = exec_count
-            return nb
-        self._modify_cell(cell, f)
-
-    def reset_outputs(self, cell: int):
-        def f(nb: dict):
-            nb['cells'][cell]['outputs'] = list()
-            return nb
-        self._modify_cell(cell, f)
-
-    def append_outputs(self, cell: int, output: Any):
-        def f(nb: dict):
-            nb['cells'][cell]['outputs'].append(output)
-            return nb
-        self._modify_cell(cell, f)
+    def modify_cell(self, i: int, f: Callable[[dict], dict]):
+        with open(self.nb_copy, 'r') as fp:
+            nb = json.load(fp)
+        if i >= len(nb['cells']):
+            raise JupyVivCellIndexError(i)
+        cell = nb['cells'][i]
+        cell = f(cell)
+        nb['cells'][i] = cell
+        with open(self.nb_copy, 'w') as fp:
+            json.dump(nb, fp, indent=2)
