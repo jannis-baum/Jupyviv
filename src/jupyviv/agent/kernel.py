@@ -33,6 +33,7 @@ async def setup_kernel(name: str, send_queue: MessageQueue) -> tuple[MessageHand
                 content = dsafe(msg, 'content')
 
                 if msg_type == 'status':
+                    # "busy" when starting to execute, "idle" when done
                     state = str(dsafe(content, 'execution_state'))
                     await send_queue.put(Message(jupyviv_id, 'status', state))
                     continue
