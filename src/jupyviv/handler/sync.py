@@ -62,20 +62,21 @@ class JupySync():
 
     def _sync_script(self):
         # wrap BaseCellReader.read to save line numbers for each cell
-        self.line2cell = list[int]()
+        self.line2cell = list[str | None]()
         bcr_read = getattr(BaseCellReader, 'read')
         def bcr_read_wrapper(*args, **kwargs):
-            # seek to first cell, header is assigned cell -1
+            # find start of first cell (below JupyText header)
             if len(self.line2cell) == 0:
-                first_line = args[1][0] + '\n'
                 with open(self.script, 'r') as fp:
-                    for line in fp.readlines():
-                        self.line2cell.append(-1)
-                        if line == first_line: break
+                    file_len = sum(1 for _ in fp)
+                # args[1] is a list of all lines without the header
+                header_len = file_len - len(args[1])
+                self.line2cell += [None] * header_len
+
             # save line numbers for next cell
-            result = bcr_read(*args, **kwargs)
-            self.line2cell += [self.line2cell[-1] + 1] * result[1]
-            return result
+            cell, n_lines = bcr_read(*args, **kwargs)
+            self.line2cell += [cell['id']] * n_lines
+            return cell, n_lines
         setattr(BaseCellReader, 'read', bcr_read_wrapper)
 
         # sync to copied notebook
