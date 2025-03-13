@@ -20,10 +20,6 @@ def _multiline_string(s: str | list[str]) -> str:
         return s
     return '\n'.join(s)
 
-class JupyVivCellIndexError(JupyVivError):
-    def __init__(self, i: int):
-        super().__init__(f'Cell {i} out of bounds')
-
 class JupySync():
     def __init__(self, path):
         if not os.path.exists(path):
@@ -85,6 +81,15 @@ class JupySync():
         # restore BaseCellReader.read
         setattr(BaseCellReader, 'read', bcr_read)
 
+    # index of cell & notebook content
+    def _find_cell(self, id: str) -> tuple[int, dict]:
+        with open(self.nb_copy, 'r') as fp:
+            nb = json.load(fp)
+        for idx, cell in enumerate(nb['cells']):
+            if cell['id'] == id:
+                return idx, nb
+        raise JupyVivError(f'Cell with id {id} not found')
+
     # sync notebook copy to original (e.g. after setting exec data)
     # script: sync script to notebook copy first
     def sync(self, script: bool = True):
@@ -95,20 +100,13 @@ class JupySync():
         shutil.copy(self.nb_copy, self.nb_original)
         _jupytext(self.nb_original, '--update-metadata', '{"jupytext":null}')
 
-    def code_for_cell(self, i: int) -> str:
-        with open(self.nb_copy, 'r') as fp:
-            cells = json.load(fp)['cells']
-            if i >= len(cells):
-                raise JupyVivCellIndexError(i)
-            return _multiline_string(cells[i]['source'])
+    def code_for_cell(self, id: str) -> str:
+        idx, nb = self._find_cell(id)
+        return _multiline_string(nb['cells'][idx]['source'])
 
-    def modify_cell(self, i: int, f: Callable[[dict], dict]):
-        with open(self.nb_copy, 'r') as fp:
-            nb = json.load(fp)
-        if i >= len(nb['cells']):
-            raise JupyVivCellIndexError(i)
-        cell = nb['cells'][i]
-        cell = f(cell)
-        nb['cells'][i] = cell
+    def modify_cell(self, id: str, f: Callable[[dict], dict]):
+        idx, nb = self._find_cell(id)
+        cell = f(nb['cells'][idx])
+        nb['cells'][idx] = cell
         with open(self.nb_copy, 'w') as fp:
             json.dump(nb, fp, indent=2)
