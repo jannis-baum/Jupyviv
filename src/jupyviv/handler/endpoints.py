@@ -1,6 +1,6 @@
 import json
 from jupyviv.handler.sync import JupySync
-from jupyviv.handler.vivify import viv_reload
+from jupyviv.handler.vivify import viv_open, viv_reload
 from jupyviv.shared.logs import get_logger
 from jupyviv.shared.messages import Message, MessageHandlerDict, MessageQueue
 
@@ -20,6 +20,9 @@ def setup_endpoints(
     async def get_script(message: Message):
         await send_queue_io.put(Message(message.id, 'script', jupy_sync.script))
 
+    async def open_notebook(_: Message):
+        viv_open(jupy_sync.nb_original)
+
     async def sync(_: Message):
         _sync(script=True)
 
@@ -37,6 +40,7 @@ def setup_endpoints(
 
     handlers_io: MessageHandlerDict = {
         'script': get_script,
+        'viv_open': open_notebook,
         'sync': sync,
         'run_at': run_at,
         'interrupt': interrupt,
