@@ -1,51 +1,65 @@
-# pyright: reportCallIssue=false
-
-from typing import Callable
-
-from jupyviv.agent.kernel import Kernel
+import json
 from jupyviv.handler.sync import JupySync
-from jupyviv.handler.transport_editor import Handler
-from jupyviv.shared.errors import JupyVivError
+from jupyviv.handler.vivify import viv_reload
+from jupyviv.shared.logs import get_logger
+from jupyviv.shared.messages import Message, MessageHandlerDict, MessageQueue
 
+_logger = get_logger(__name__)
+
+# returns handlers for editor & agent
 def setup_endpoints(
     jupy_sync: JupySync,
-    kernel: Kernel,
-    reload: Callable[[], None]
-) -> dict[str, Handler]:
-
-    def get_script(_: list[str]):
-        return jupy_sync.script
-
+    send_queue_io: MessageQueue,
+    send_queue_agent: MessageQueue
+) -> tuple[MessageHandlerDict, MessageHandlerDict]:
     def _sync(script: bool):
         jupy_sync.sync(script)
-        reload()
+        viv_reload(jupy_sync.nb_original)
 
-    def sync(_: list[str]):
+    # EDITOR ENDPOINTS ---------------------------------------------------------
+    async def get_script(message: Message):
+        await send_queue_io.put(Message(message.id, 'script', jupy_sync.script))
+
+    async def sync(_: Message):
         _sync(script=True)
 
-    def run(args: list[str]):
-        try:
-            if len(args) != 1:
-                raise ValueError
-            line_i = int(args[0])
-            if line_i < 0 or line_i >= len(jupy_sync.line2cell):
-                raise ValueError
-        except ValueError:
-            raise JupyVivError('Invalid line number')
+    async def run_at(message: Message):
+        line_i = int(message.args)
+        cell_id = jupy_sync.cell_at(line_i)
+        code = jupy_sync.code_for_cell(cell_id)
+        await send_queue_agent.put(Message(cell_id, 'execute', code))
 
-        cell_i = jupy_sync.line2cell[line_i]
-
-        jupy_sync.set_cell_exec_data(cell_i, None, [])
-        _sync(script=False)
-
-        code = jupy_sync.code_for_cell(cell_i)
-        exec_count, outputs = kernel.execute(code)
-
-        jupy_sync.set_cell_exec_data(cell_i, exec_count, outputs)
-        _sync(script=False)
-
-    return {
+    handlers_io: MessageHandlerDict = {
+        'script': get_script,
         'sync': sync,
-        'run': run,
-        'get_script': get_script,
+        'run_at': run_at
     }
+
+    # AGENT ENDPOINTS ----------------------------------------------------------
+    async def status(message: Message):
+        if message.args != 'busy':
+            return
+        jupy_sync.modify_cell(message.id, lambda cell: {
+            **cell, 'execution_count': None, 'outputs': []
+        })
+        _sync(False)
+
+    async def execute_input(message: Message):
+        jupy_sync.modify_cell(message.id, lambda cell: {
+            **cell, 'execution_count': message.args
+        })
+        _sync(False)
+
+    async def output(message: Message):
+        jupy_sync.modify_cell(message.id, lambda cell: {
+            **cell, 'outputs': cell['outputs'] + [json.loads(message.args)]
+        })
+        _sync(False)
+
+    handlers_agent: MessageHandlerDict = {
+        'status': status,
+        'execute_input': execute_input,
+        'output': output
+    }
+
+    return handlers_io, handlers_agent

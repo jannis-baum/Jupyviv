@@ -3,6 +3,7 @@ import signal
 import sys
 
 from jupyviv.agent import launch_as_subprocess
+from jupyviv.handler.endpoints import setup_endpoints
 from jupyviv.handler.sync import JupySync
 from jupyviv.handler.vivify import viv_open
 from jupyviv.shared.messages import MessageHandler, new_queue
@@ -22,8 +23,10 @@ async def _main(notebook: str, agent_address: str | None, log_level: str):
 
             send_queue_editor = new_queue()
             send_queue_agent = new_queue()
-            recv_handler_editor = MessageHandler({})
-            recv_handler_agent = MessageHandler({})
+
+            handlers_editor, handlers_agent = setup_endpoints(jupy_sync, send_queue_editor, send_queue_agent)
+            recv_handler_editor = MessageHandler(handlers_editor)
+            recv_handler_agent = MessageHandler(handlers_agent)
 
             editor_task = asyncio.create_task(run_editor_com(recv_handler_editor, send_queue_editor, sys.stdin, sys.stdout))
             try:
