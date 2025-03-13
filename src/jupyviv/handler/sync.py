@@ -83,6 +83,8 @@ class JupySync():
         # restore BaseCellReader.read
         setattr(BaseCellReader, 'read', bcr_read)
 
+    # sync notebook copy to original (e.g. after setting exec data)
+    # script: sync script to notebook copy first
     def sync(self, script: bool = True):
         _logger.info(f'Syncing {"notebook and script" if script else "notebook"}')
         if script: self._sync_script()
