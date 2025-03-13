@@ -45,11 +45,20 @@ def setup_endpoints(
 
     # AGENT ENDPOINTS ----------------------------------------------------------
     async def status(message: Message):
-        if message.args != 'busy':
-            return
-        jupy_sync.modify_cell(message.id, lambda cell: {
-            **cell, 'execution_count': None, 'outputs': []
-        })
+        if message.args == 'busy':
+            # start of execution: reset count & outputs, set custom isRunning
+            jupy_sync.modify_cell(message.id, lambda cell: {
+                **cell, 'execution_count': None, 'outputs': [], 'metadata': {
+                    **cell['metadata'], 'jupyviv': { 'isRunning': True }
+                }
+            })
+        if message.args == 'idle':
+            # execution done, remove custom isRunning
+            jupy_sync.modify_cell(message.id, lambda cell: {
+                **cell, 'metadata': {
+                    k: v for k, v in cell['metadata'].items() if k != 'jupyviv'
+                }
+            })
         _sync(False)
 
     async def execute_input(message: Message):
