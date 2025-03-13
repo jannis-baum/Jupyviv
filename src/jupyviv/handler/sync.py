@@ -37,9 +37,10 @@ class JupySync():
                 raise JupyVivError('Invalid metadata language_info.file_extension')
             self.format = self.format[1:]
 
-            self.kernel_name = dsafe(nb_data, 'metadata', 'kernelspec', 'name')
-            if self.kernel_name == None or not isinstance(self.kernel_name, str):
+            kernel_name = dsafe(nb_data, 'metadata', 'kernelspec', 'name')
+            if kernel_name == None or not isinstance(kernel_name, str):
                 raise JupyVivError('Invalid metadata kernelspec.name')
+            self.kernel_name = str(kernel_name)
 
         self.nb_original = path
         temp = ''.join(path.split('.ipynb')[:-1]) + '.jupyviv'
