@@ -21,7 +21,7 @@ class Message:
 
     @staticmethod
     def from_str(message_str: str):
-        parts = message_str.split(' ')
+        parts = message_str.strip().split(' ')
         if len(parts) < 2:
             raise MessageFormatError(message_str)
         return Message(parts[0], parts[1], ' '.join(parts[2:]))
