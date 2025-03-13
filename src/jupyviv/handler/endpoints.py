@@ -29,10 +29,18 @@ def setup_endpoints(
         code = jupy_sync.code_for_cell(cell_id)
         await send_queue_agent.put(Message(cell_id, 'execute', code))
 
+    async def interrupt(message: Message):
+        await send_queue_agent.put(Message(message.id, 'interrupt'))
+
+    async def restart(message: Message):
+        await send_queue_agent.put(Message(message.id, 'restart'))
+
     handlers_io: MessageHandlerDict = {
         'script': get_script,
         'sync': sync,
-        'run_at': run_at
+        'run_at': run_at,
+        'interrupt': interrupt,
+        'restart': restart
     }
 
     # AGENT ENDPOINTS ----------------------------------------------------------
