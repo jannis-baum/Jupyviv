@@ -31,7 +31,7 @@ async def run(
         while True:
             message = await send_queue.get()
             _logger.debug(f'IO sending message: {message}')
-            writer.writelines([message.to_str().encode()])
+            writer.writelines([f'{message.to_str()}\n'.encode()])
 
     async def _receiver():
         while True:
