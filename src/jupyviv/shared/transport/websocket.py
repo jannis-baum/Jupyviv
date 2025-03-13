@@ -79,12 +79,20 @@ async def run_server(
 async def run_client(
     address: str,
     recv_handler: MessageHandler,
-    send_queue: MessageQueue
+    send_queue: MessageQueue,
+    connection_retries = 5
 ):
     # message that was dropped due to disconnect or other errors
     dropped_message = _DroppedMessage()
     async def consumer(websocket: ClientConnection):
         await _connection_handler(websocket, recv_handler, send_queue, dropped_message)
 
-    async with connect(f'ws://{address}') as websocket:
-        await consumer(websocket)
+    for attempt in range(connection_retries):
+        try:
+            async with connect(f'ws://{address}') as websocket:
+                await consumer(websocket)
+        except OSError:
+            if attempt == connection_retries - 1:
+                raise
+            await asyncio.sleep(1)
+            continue
