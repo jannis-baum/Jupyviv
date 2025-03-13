@@ -6,10 +6,13 @@ from jupyviv.agent import launch_as_subprocess
 from jupyviv.handler.endpoints import setup_endpoints
 from jupyviv.handler.sync import JupySync
 from jupyviv.handler.vivify import viv_open
+from jupyviv.shared.logs import get_logger
 from jupyviv.shared.messages import MessageHandler, new_queue
 from jupyviv.shared.transport.iostream import run as run_editor_com
 from jupyviv.shared.transport.websocket import default_port, run_client as run_agent_com
 from jupyviv.shared.utils import Subparsers
+
+_logger = get_logger(__name__)
 
 async def _main(notebook: str, agent_address: str | None, log_level: str):
     agent_proc = None
@@ -34,6 +37,8 @@ async def _main(notebook: str, agent_address: str | None, log_level: str):
             except asyncio.CancelledError: # keyboard interrupt
                 editor_task.cancel()
                 await editor_task
+    except Exception as e:
+        _logger.critical(e)
     finally:
         # shut down lazily launched agent with handler
         if agent_proc is not None:
