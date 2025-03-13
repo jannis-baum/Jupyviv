@@ -1,8 +1,10 @@
 import asyncio
+import subprocess
+import sys
 
 from jupyviv.agent.kernel import setup_kernel
 from jupyviv.shared.messages import MessageHandler, new_queue
-from jupyviv.shared.transport.websocket import run_server, default_port
+from jupyviv.shared.transport.websocket import default_port, run_server
 from jupyviv.shared.utils import Subparsers
 
 async def _main(port: int, kernel_name: str):
@@ -19,7 +21,17 @@ async def _main(port: int, kernel_name: str):
         await server_task
 
 def _cli(args):
-    asyncio.run(_main(args.port, args.kernel_name))
+    try:
+        asyncio.run(_main(args.port, args.kernel_name))
+    except KeyboardInterrupt:
+        pass
+
+def launch_as_subprocess(kernel_name: str, log_level: str) -> subprocess.Popen:
+    return subprocess.Popen(
+        [sys.argv[0], '--log', log_level, 'agent', kernel_name],
+        stderr=sys.stderr,
+        stdout=subprocess.DEVNULL
+    )
 
 def setup_agent_args(subparsers: Subparsers):
     parser = subparsers.add_parser('agent', help='Run the agent')

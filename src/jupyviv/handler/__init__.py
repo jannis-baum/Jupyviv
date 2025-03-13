@@ -1,26 +1,46 @@
 import asyncio
+import signal
 import sys
 
+from jupyviv.agent import launch_as_subprocess
 from jupyviv.handler.sync import JupySync
 from jupyviv.handler.vivify import viv_open
-from jupyviv.shared.messages import Message, MessageHandler, new_queue
-from jupyviv.shared.transport.iostream import run
+from jupyviv.shared.messages import MessageHandler, new_queue
+from jupyviv.shared.transport.iostream import run as run_io_com
+from jupyviv.shared.transport.websocket import default_port, run_client as run_agent_com
 from jupyviv.shared.utils import Subparsers
 
-async def _main(notebook: str, agent_address: str | None):
-    with JupySync(notebook) as jupy_sync:
-        viv_open(notebook)
+async def _main(notebook: str, agent_address: str | None, log_level: str):
+    agent_proc = None
+    try:
+        with JupySync(notebook) as jupy_sync:
+            viv_open(notebook)
 
-        send_queue = new_queue()
-        recv_handler = MessageHandler({})
+            # lazy launch agent if address not provided
+            if agent_address is None:
+                agent_proc = launch_as_subprocess(jupy_sync.kernel_name, log_level)
 
-        try:
-            await run(recv_handler, send_queue, sys.stdin, sys.stdout)
-        except asyncio.CancelledError: # keyboard interrupt
-            pass
+            send_queue_io = new_queue()
+            send_queue_agent = new_queue()
+            recv_handler_io = MessageHandler({})
+            recv_handler_agent = MessageHandler({})
+
+            io_com_task = asyncio.create_task(run_io_com(recv_handler_io, send_queue_io, sys.stdin, sys.stdout))
+            try:
+                await run_agent_com(agent_address or f'localhost:{default_port}', recv_handler_agent, send_queue_agent)
+            except asyncio.CancelledError: # keyboard interrupt
+                io_com_task.cancel()
+                await io_com_task
+    finally:
+        # shut down lazily launched agent with handler
+        if agent_proc is not None:
+            agent_proc.send_signal(signal.SIGINT)
 
 def _cli(args):
-    asyncio.run(_main(args.notebook, args.agent))
+    try:
+        asyncio.run(_main(args.notebook, args.agent, args.log))
+    except KeyboardInterrupt:
+        pass
 
 def setup_handler_args(subparsers: Subparsers):
     parser = subparsers.add_parser('handler', help='Run the handler')
