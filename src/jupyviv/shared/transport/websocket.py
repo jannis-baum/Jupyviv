@@ -32,6 +32,7 @@ async def _connection_handler(
                     dropped_message.message = None
                 else:
                     message = await send_queue.get()
+                _logger.debug(f'Websocket sending message: {message}')
                 await websocket.send(message.to_str())
             except ConnectionClosed:
                 dropped_message.message = message
@@ -42,6 +43,7 @@ async def _connection_handler(
     async def _receiver():
         async for message in websocket:
             try:
+                _logger.debug(f'IO received message string: {str(message)}')
                 await recv_handler.handle(str(message))
             except ConnectionClosed:
                 break

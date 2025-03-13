@@ -30,11 +30,13 @@ async def run(
     async def _sender():
         while True:
             message = await send_queue.get()
+            _logger.debug(f'IO sending message: {message}')
             writer.writelines([message.to_str().encode()])
 
     async def _receiver():
         while True:
             message_str = (await reader.readline()).decode()
+            _logger.debug(f'IO received message string: {message_str}')
             try:
                 await recv_handler.handle(message_str)
             except Exception as e:
