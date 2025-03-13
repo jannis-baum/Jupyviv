@@ -14,7 +14,7 @@ class MessageUnknownError(JupyVivError):
 T = TypeVar("T")
 
 class Message:
-    def __init__(self, id: str, command: str, args: str):
+    def __init__(self, id: str, command: str, args: str = ''):
         self.id = id
         self.command = command
         self.args = args
