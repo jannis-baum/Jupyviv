@@ -14,7 +14,7 @@ async def _main(port: int, kernel_name: str):
 
     try:
         await run_kernel()
-    except KeyboardInterrupt:
+    except asyncio.CancelledError: # keyboard interrupt
         server_task.cancel()
         await server_task
 
