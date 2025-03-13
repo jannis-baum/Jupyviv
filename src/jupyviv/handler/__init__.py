@@ -6,7 +6,7 @@ from jupyviv.agent import launch_as_subprocess
 from jupyviv.handler.sync import JupySync
 from jupyviv.handler.vivify import viv_open
 from jupyviv.shared.messages import MessageHandler, new_queue
-from jupyviv.shared.transport.iostream import run as run_io_com
+from jupyviv.shared.transport.iostream import run as run_editor_com
 from jupyviv.shared.transport.websocket import default_port, run_client as run_agent_com
 from jupyviv.shared.utils import Subparsers
 
@@ -20,17 +20,17 @@ async def _main(notebook: str, agent_address: str | None, log_level: str):
             if agent_address is None:
                 agent_proc = launch_as_subprocess(jupy_sync.kernel_name, log_level)
 
-            send_queue_io = new_queue()
+            send_queue_editor = new_queue()
             send_queue_agent = new_queue()
-            recv_handler_io = MessageHandler({})
+            recv_handler_editor = MessageHandler({})
             recv_handler_agent = MessageHandler({})
 
-            io_com_task = asyncio.create_task(run_io_com(recv_handler_io, send_queue_io, sys.stdin, sys.stdout))
+            editor_task = asyncio.create_task(run_editor_com(recv_handler_editor, send_queue_editor, sys.stdin, sys.stdout))
             try:
                 await run_agent_com(agent_address or f'localhost:{default_port}', recv_handler_agent, send_queue_agent)
             except asyncio.CancelledError: # keyboard interrupt
-                io_com_task.cancel()
-                await io_com_task
+                editor_task.cancel()
+                await editor_task
     finally:
         # shut down lazily launched agent with handler
         if agent_proc is not None:
