@@ -58,20 +58,20 @@ class JupySync():
 
     def _sync_script(self):
         # wrap BaseCellReader.read to save line numbers for each cell
-        self.line2cell = list[str | None]()
+        self._line2cell = list[str | None]()
         bcr_read = getattr(BaseCellReader, 'read')
         def bcr_read_wrapper(*args, **kwargs):
             # find start of first cell (below JupyText header)
-            if len(self.line2cell) == 0:
+            if len(self._line2cell) == 0:
                 with open(self.script, 'r') as fp:
                     file_len = sum(1 for _ in fp)
                 # args[1] is a list of all lines without the header
                 header_len = file_len - len(args[1])
-                self.line2cell += [None] * header_len
+                self._line2cell += [None] * header_len
 
             # save line numbers for next cell
             cell, n_lines = bcr_read(*args, **kwargs)
-            self.line2cell += [cell['id']] * n_lines
+            self._line2cell += [cell['id']] * n_lines
             return cell, n_lines
         setattr(BaseCellReader, 'read', bcr_read_wrapper)
 
@@ -89,6 +89,12 @@ class JupySync():
             if cell['id'] == id:
                 return idx, nb
         raise JupyVivError(f'Cell with id {id} not found')
+
+    def cell_at(self, line: int) -> str:
+        cell_id = self._line2cell[line]
+        if cell_id is None:
+            raise LookupError(f'No cell at line {line}')
+        return cell_id
 
     # sync notebook copy to original (e.g. after setting exec data)
     # script: sync script to notebook copy first
