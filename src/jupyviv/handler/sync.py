@@ -56,22 +56,29 @@ class JupySync():
         os.remove(self.nb_copy)
         os.remove(self.script)
 
+    def _read_nb(self) -> dict:
+        with open(self.nb_copy, 'r') as fp:
+            return json.load(fp)
+
     def _sync_script(self):
-        # wrap BaseCellReader.read to save line numbers for each cell
-        self._line2cell = list[str | None]()
+        # wrap BaseCellReader.read to save line numbers for each cell.
+        # first we map line numbers to cell indices because JupyText uses
+        # different ids internally
+        line2cell_idx = list[int]()
         bcr_read = getattr(BaseCellReader, 'read')
         def bcr_read_wrapper(*args, **kwargs):
+            nonlocal line2cell_idx
             # find start of first cell (below JupyText header)
-            if len(self._line2cell) == 0:
+            if len(line2cell_idx) == 0:
                 with open(self.script, 'r') as fp:
                     file_len = sum(1 for _ in fp)
                 # args[1] is a list of all lines without the header
                 header_len = file_len - len(args[1])
-                self._line2cell += [None] * header_len
+                line2cell_idx += [-1] * header_len
 
-            # save line numbers for next cell
             cell, n_lines = bcr_read(*args, **kwargs)
-            self._line2cell += [cell['id']] * n_lines
+            # save line numbers for next cell
+            line2cell_idx += [line2cell_idx[-1] + 1] * n_lines
             return cell, n_lines
         setattr(BaseCellReader, 'read', bcr_read_wrapper)
 
@@ -81,10 +88,17 @@ class JupySync():
         # restore BaseCellReader.read
         setattr(BaseCellReader, 'read', bcr_read)
 
+        # finally, we read the notebook and map the cell indices to the real
+        # notebook cell ids
+        nb = self._read_nb()
+        self._line2cell = {
+            line: nb['cells'][cell_idx]['id']
+            for line, cell_idx in enumerate(line2cell_idx)
+        }
+
     # index of cell & notebook content
     def _find_cell(self, id: str) -> tuple[int, dict]:
-        with open(self.nb_copy, 'r') as fp:
-            nb = json.load(fp)
+        nb = self._read_nb()
         for idx, cell in enumerate(nb['cells']):
             if cell['id'] == id:
                 return idx, nb
