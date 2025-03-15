@@ -3,6 +3,10 @@ import subprocess
 
 import requests
 
+from jupyviv.shared.logs import get_logger
+
+_logger = get_logger(__name__)
+
 try:
     viv_port = int(os.environ.get('VIV_PORT', ''))
 except:
@@ -17,5 +21,5 @@ def viv_reload(file: str):
     try:
         requests.post(f'{viv_url}/viewer{path}', json={'reload': 1})
     except Exception as e:
-        print(e)
+        _logger.error(f'Failed to reload {path} in Vivify: {e}')
         pass

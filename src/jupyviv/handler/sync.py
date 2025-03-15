@@ -1,13 +1,14 @@
 import json
 import os
 import shutil
+from typing import Any, Callable
 
 from jupytext.cell_reader import BaseCellReader
 from jupytext.cli import jupytext as jupytext_cli
 
-from jupyviv.communication import JupyVivError
-from jupyviv.logs import get_logger
-from jupyviv.utils import dsafe
+from jupyviv.shared.errors import JupyVivError
+from jupyviv.shared.logs import get_logger
+from jupyviv.shared.utils import dsafe
 
 _logger = get_logger(__name__)
 
@@ -18,10 +19,6 @@ def _multiline_string(s: str | list[str]) -> str:
     if isinstance(s, str):
         return s
     return '\n'.join(s)
-
-class JupyVivCellIndexError(JupyVivError):
-    def __init__(self, i: int):
-        super().__init__(f'Cell {i} out of bounds')
 
 class JupySync():
     def __init__(self, path):
@@ -37,9 +34,10 @@ class JupySync():
                 raise JupyVivError('Invalid metadata language_info.file_extension')
             self.format = self.format[1:]
 
-            self.kernel_name = dsafe(nb_data, 'metadata', 'kernelspec', 'name')
-            if self.kernel_name == None or not isinstance(self.kernel_name, str):
+            kernel_name = dsafe(nb_data, 'metadata', 'kernelspec', 'name')
+            if kernel_name == None or not isinstance(kernel_name, str):
                 raise JupyVivError('Invalid metadata kernelspec.name')
+            self.kernel_name = str(kernel_name)
 
         self.nb_original = path
         temp = ''.join(path.split('.ipynb')[:-1]) + '.jupyviv'
@@ -58,22 +56,30 @@ class JupySync():
         os.remove(self.nb_copy)
         os.remove(self.script)
 
+    def _read_nb(self) -> dict:
+        with open(self.nb_copy, 'r') as fp:
+            return json.load(fp)
+
     def _sync_script(self):
-        # wrap BaseCellReader.read to save line numbers for each cell
-        self.line2cell = list[int]()
+        # wrap BaseCellReader.read to save line numbers for each cell.
+        # first we map line numbers to cell indices because JupyText uses
+        # different ids internally
+        line2cell_idx = list[int]()
         bcr_read = getattr(BaseCellReader, 'read')
         def bcr_read_wrapper(*args, **kwargs):
-            # seek to first cell, header is assigned cell -1
-            if len(self.line2cell) == 0:
-                first_line = args[1][0] + '\n'
+            nonlocal line2cell_idx
+            # find start of first cell (below JupyText header)
+            if len(line2cell_idx) == 0:
                 with open(self.script, 'r') as fp:
-                    for line in fp.readlines():
-                        self.line2cell.append(-1)
-                        if line == first_line: break
+                    file_len = sum(1 for _ in fp)
+                # args[1] is a list of all lines without the header
+                header_len = file_len - len(args[1])
+                line2cell_idx += [-1] * header_len
+
+            cell, n_lines = bcr_read(*args, **kwargs)
             # save line numbers for next cell
-            result = bcr_read(*args, **kwargs)
-            self.line2cell += [self.line2cell[-1] + 1] * result[1]
-            return result
+            line2cell_idx += [line2cell_idx[-1] + 1] * n_lines
+            return cell, n_lines
         setattr(BaseCellReader, 'read', bcr_read_wrapper)
 
         # sync to copied notebook
@@ -82,6 +88,30 @@ class JupySync():
         # restore BaseCellReader.read
         setattr(BaseCellReader, 'read', bcr_read)
 
+        # finally, we read the notebook and map the cell indices to the real
+        # notebook cell ids
+        nb = self._read_nb()
+        self._line2cell = {
+            line: nb['cells'][cell_idx]['id']
+            for line, cell_idx in enumerate(line2cell_idx)
+        }
+
+    # index of cell & notebook content
+    def _find_cell(self, id: str) -> tuple[int, dict]:
+        nb = self._read_nb()
+        for idx, cell in enumerate(nb['cells']):
+            if cell['id'] == id:
+                return idx, nb
+        raise JupyVivError(f'Cell with id {id} not found')
+
+    def cell_at(self, line: int) -> str:
+        cell_id = self._line2cell[line]
+        if cell_id is None:
+            raise LookupError(f'No cell at line {line}')
+        return cell_id
+
+    # sync notebook copy to original (e.g. after setting exec data)
+    # script: sync script to notebook copy first
     def sync(self, script: bool = True):
         _logger.info(f'Syncing {"notebook and script" if script else "notebook"}')
         if script: self._sync_script()
@@ -90,19 +120,13 @@ class JupySync():
         shutil.copy(self.nb_copy, self.nb_original)
         _jupytext(self.nb_original, '--update-metadata', '{"jupytext":null}')
 
-    def code_for_cell(self, i: int) -> str:
-        with open(self.nb_copy, 'r') as fp:
-            cells = json.load(fp)['cells']
-            if i >= len(cells):
-                raise JupyVivCellIndexError(i)
-            return _multiline_string(cells[i]['source'])
+    def code_for_cell(self, id: str) -> str:
+        idx, nb = self._find_cell(id)
+        return _multiline_string(nb['cells'][idx]['source'])
 
-    def set_cell_exec_data(self, i: int, exec_count: int | None, outputs: list):
-        with open(self.nb_copy, 'r') as fp:
-            nb = json.load(fp)
-            if i >= len(nb['cells']):
-                raise JupyVivCellIndexError(i)
-        nb['cells'][i]['execution_count'] = exec_count
-        nb['cells'][i]['outputs'] = outputs
+    def modify_cell(self, id: str, f: Callable[[dict], dict]):
+        idx, nb = self._find_cell(id)
+        cell = f(nb['cells'][idx])
+        nb['cells'][idx] = cell
         with open(self.nb_copy, 'w') as fp:
             json.dump(nb, fp, indent=2)

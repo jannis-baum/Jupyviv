@@ -3,13 +3,20 @@ import sys
 
 _registered_handlers = set[logging.StreamHandler]()
 
+log_levels = {
+    level: name
+    for name, level in logging.getLevelNamesMapping().items()
+    if level != 0
+}.values() # dict approach to remove duplicates (WARN, WARNING)
+default_log_level = logging.getLevelName(logging.getLogger().level)
+
 def set_loglevel(level: str | int):
     for handler in _registered_handlers:
         handler.setLevel(level)
 
 # make loggers always output to stderr
 def get_logger(name: str) -> logging.Logger:
-    logger = logging.getLogger(name)
+    logger = logging.getLogger(name.removeprefix('jupyviv.'))
     logger.setLevel(logging.DEBUG)
 
     stderr_handler = logging.StreamHandler(sys.stderr)
