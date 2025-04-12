@@ -10,6 +10,7 @@ requires-python = ">=3.12"
 dependencies = [
     "jupyter-client>=8.6.3",
     "jupytext>=1.16.7",
+    "psutil>=7.0.0",
     "requests>=2.32.3",
     "websockets>=15.0.1",
 ]
