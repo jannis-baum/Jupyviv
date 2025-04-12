@@ -1,7 +1,8 @@
 import json
 import os
+from pathlib import Path
 import shutil
-from typing import Any, Callable
+from typing import Callable
 
 from jupytext.cell_reader import BaseCellReader
 from jupytext.cli import jupytext as jupytext_cli
@@ -61,6 +62,14 @@ class JupySync():
             return json.load(fp)
 
     def _sync_script(self):
+        # save original state of script so we can restore after syncing to
+        # prevent any changes that are made to the file open in the editor
+        script_file = Path(self.script)
+        script_content = script_file.read_bytes()
+        script_stat = script_file.stat()
+        script_mtime = script_stat.st_mtime_ns
+        script_atime = script_stat.st_atime_ns
+
         # wrap BaseCellReader.read to save line numbers for each cell.
         # first we map line numbers to cell indices because JupyText uses
         # different ids internally
@@ -95,6 +104,10 @@ class JupySync():
             line: nb['cells'][cell_idx]['id']
             for line, cell_idx in enumerate(line2cell_idx)
         }
+
+        # restore original state of script file (see above)
+        script_file.write_bytes(script_content)
+        os.utime(self.script, ns=(script_atime, script_mtime))
 
     # index of cell & notebook content
     def _find_cell(self, id: str) -> tuple[int, dict]:
