@@ -67,7 +67,7 @@ def setup_endpoints(
 
     async def execute_input(message: Message):
         jupy_sync.modify_cell(message.id, lambda cell: {
-            **cell, 'execution_count': message.args
+            **cell, 'execution_count': int(message.args)
         })
         _sync(False)
 
