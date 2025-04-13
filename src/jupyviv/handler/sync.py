@@ -101,7 +101,7 @@ class JupySync():
         # notebook cell ids
         nb = self._read_nb()
         self._line2cell = {
-            line: nb['cells'][cell_idx]['id']
+            line + 1: nb['cells'][cell_idx]['id']
             for line, cell_idx in enumerate(line2cell_idx)
         }
 
