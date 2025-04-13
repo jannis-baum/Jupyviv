@@ -34,11 +34,13 @@ async def run(
             writer.writelines([f'{message.to_str()}\n'.encode()])
 
     async def _receiver():
-        while True:
-            message_str = (await reader.readline()).decode()
-            _logger.debug(f'IO received message string: {message_str}')
+        while not reader.at_eof():
             try:
+                message_str = (await reader.readline()).decode()
+                _logger.debug(f'IO received message string: {message_str}')
                 await recv_handler.handle(message_str)
+            except asyncio.CancelledError as e:
+                raise e
             except Exception as e:
                 _logger.error(f'Receive error {type(e)}: {e}')
 
