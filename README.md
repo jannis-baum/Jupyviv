@@ -40,10 +40,13 @@ Jupyviv itself is made up of two components:
   the `agent`, your editor, and Vivify
 
 The `handler` is always run locally where your editor and Vivify are as well,
-and should be taken care of by your editor plugin. The `agent` can be run
-separately (optionally on a different machine), or can be launched and managed
-by the handler. Use `jupyviv agent --help` to see how to run the `agent`
-separately.
+and should be taken care of by your editor plugin. The `agent` can be
+automatically launched and managed by the `handler`, or run separately
+(optionally on a different machine).
+
+To run the `agent` either way, you need the Jupyter Kernel for the respective
+language installed, e.g. `pip install ipykernel` for Python. If you want to run
+the agent separately, use `jupyviv agent --help` for more information.
 
 ### Existing editor integration
 
