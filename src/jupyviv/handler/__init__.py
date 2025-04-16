@@ -3,8 +3,10 @@ import sys
 
 from jupyviv.agent import launch_as_subprocess
 from jupyviv.handler.endpoints import setup_endpoints
+from jupyviv.handler.new import create_notebook
 from jupyviv.handler.sync import JupySync
 from jupyviv.handler.vivify import viv_open
+from jupyviv.shared.errors import JupyVivError
 from jupyviv.shared.logs import get_logger
 from jupyviv.shared.messages import MessageHandler, new_queue
 from jupyviv.shared.transport.iostream import run as run_editor_com
@@ -14,13 +16,36 @@ from jupyviv.shared.utils import Subparsers
 _logger = get_logger(__name__)
 
 async def main(args):
+    # lazy launch agent (will quit automatically when parent dies)
+    def _launch_agent(kernel_name: str):
+        launch_as_subprocess(kernel_name, args.log, False)
+
+    should_launch_agent = args.agent is None
+    agent_addr = args.agent or f'localhost:{default_port}'
+    if args.new is not None:
+        # ensure agent is running & new argument is correct
+        if should_launch_agent:
+            if args.new is True:
+                _logger.critical('--new [KERNEL_NAME] has to be specified if --agent is not')
+                return 1
+            kernel_name = str(args.new)
+            _launch_agent(kernel_name)
+            should_launch_agent = False
+        else:
+            if args.new is not True:
+                _logger.critical('--new [KERNEL_NAME] can only be specified if --agent is not')
+                return 1
+        # create new notebook
+        try:
+            await create_notebook(args.notebook, agent_addr)
+        except JupyVivError as error:
+            _logger.critical(str(error))
+            return 1
+
     try:
         with JupySync(args.notebook) as jupy_sync:
             viv_open(args.notebook)
-
-            # lazy launch agent if address not provided (will quit automatically when parent dies)
-            if args.agent is None:
-                launch_as_subprocess(jupy_sync.kernel_name, args.log, False)
+            if should_launch_agent: _launch_agent(jupy_sync.kernel_name)
 
             send_queue_editor = new_queue()
             send_queue_agent = new_queue()
@@ -31,15 +56,19 @@ async def main(args):
 
             editor_task = asyncio.create_task(run_editor_com(recv_handler_editor, send_queue_editor, sys.stdin, sys.stdout))
             try:
-                await run_agent_com(args.agent or f'localhost:{default_port}', recv_handler_agent, send_queue_agent)
+                await run_agent_com(agent_addr, recv_handler_agent, send_queue_agent)
             except asyncio.CancelledError: # keyboard interrupt
                 editor_task.cancel()
                 await editor_task
+                return 0
     except Exception as e:
         _logger.critical(e)
+        return 1
 
 def setup_handler_args(subparsers: Subparsers):
     parser = subparsers.add_parser('handler', help='Run the handler')
     parser.add_argument('notebook', type=str)
     parser.add_argument('--agent', type=str, help='Address to connect to a running agent')
+    parser.add_argument('--new', nargs='?', const=True, metavar='KERNEL_NAME',
+        help='Create a new notebook. Specify kernel name as argument iff not providing --agent')
     parser.set_defaults(func=main)
