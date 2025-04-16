@@ -1,13 +1,13 @@
 import asyncio
 import json
 
-from jupyviv.shared.errors import JupyVivError
+from jupyviv.shared.errors import JupyvivError
 from jupyviv.shared.messages import Message, MessageHandler, new_queue
 from jupyviv.shared.transport.websocket import run_client
 
 async def create_notebook(path: str, agent_addr: str):
     if not path.endswith('.ipynb'):
-        raise JupyVivError('New Notebook needs to end in ".ipynb"')
+        raise JupyvivError('New Notebook needs to end in ".ipynb"')
 
     # metadata is retrieved into queue so we can await it
     metadata_queue = asyncio.Queue()
@@ -27,7 +27,7 @@ async def create_notebook(path: str, agent_addr: str):
     try:
         metadata = await asyncio.wait_for(metadata_queue.get(), timeout=10)
     except:
-        raise JupyVivError('Failed to retrieve metadata from agent')
+        raise JupyvivError('Failed to retrieve metadata from agent')
     finally:
         socket_task.cancel()
         await socket_task

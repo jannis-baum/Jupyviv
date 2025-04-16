@@ -6,7 +6,7 @@ from jupyviv.handler.endpoints import setup_endpoints
 from jupyviv.handler.new import create_notebook
 from jupyviv.handler.sync import JupySync
 from jupyviv.handler.vivify import viv_open
-from jupyviv.shared.errors import JupyVivError
+from jupyviv.shared.errors import JupyvivError
 from jupyviv.shared.logs import get_logger
 from jupyviv.shared.messages import MessageHandler, new_queue
 from jupyviv.shared.transport.iostream import run as run_editor_com
@@ -38,7 +38,7 @@ async def main(args):
         # create new notebook
         try:
             await create_notebook(args.notebook, agent_addr)
-        except JupyVivError as error:
+        except JupyvivError as error:
             _logger.critical(str(error))
             return 1
 
