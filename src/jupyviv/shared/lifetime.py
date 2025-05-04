@@ -8,9 +8,14 @@ from jupyviv.shared.logs import get_logger
 _logger = get_logger(__file__)
 
 async def shutdown(timeout=1):
+    # prevent anything else from being output (i.e. future errors are suppressed)
+    devnull_fd = os.open(os.devnull, os.O_WRONLY)
+    os.dup2(devnull_fd, 1) # dup stdout to devnull
+    os.dup2(devnull_fd, 2) # dup stderr to devnull
+    # try to shutdown gracefully with SIGINT
     os.kill(os.getpid(), signal.SIGINT)
+    # wait and if we're still here, exit
     await asyncio.sleep(timeout)
-    _logger.warning('Failed to gracefully shut down without deadline, exiting')
     sys.exit(1)
 
 # monitor if parent process is still alive; if not, gracefully shut down
