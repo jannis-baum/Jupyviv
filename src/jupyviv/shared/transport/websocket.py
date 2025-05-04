@@ -34,23 +34,30 @@ async def _connection_handler(
                     message = await send_queue.get()
                 _logger.debug(f'Websocket sending message: {message}')
                 await websocket.send(message.to_str())
-            except ConnectionClosed:
+                # clear message after successful send
+                message = None
+            except (ConnectionClosed, asyncio.CancelledError):
                 dropped_message.message = message
                 break
             except Exception as e:
                 _logger.error(f'Send error {type(e)}: {e}')
 
     async def _receiver():
-        async for message in websocket:
-            try:
-                _logger.debug(f'IO received message string: {str(message)}')
-                await recv_handler.handle(str(message))
-            except ConnectionClosed:
-                break
-            except Exception as e:
-                _logger.error(f'Receive error {type(e)}: {e}')
+        try:
+            async for message in websocket:
+                try:
+                    _logger.debug(f'IO received message string: {str(message)}')
+                    await recv_handler.handle(str(message))
+                except Exception as e:
+                    _logger.error(f'Receive error {type(e)}: {e}')
+        except (ConnectionClosed, asyncio.CancelledError):
+            pass
 
-    await asyncio.gather(_sender(), _receiver())
+    sender_task = asyncio.create_task(_sender())
+    # receiver exits on ConnectionClose, we use that to cancel sender as well
+    await _receiver()
+    sender_task.cancel()
+    await sender_task
 
 default_port = 8000
 
@@ -93,6 +100,7 @@ async def run_client(
         try:
             async with connect(f'ws://{address}') as websocket:
                 await consumer(websocket)
+            break
         except OSError:
             if attempt == connection_retries - 1:
                 raise

@@ -7,7 +7,7 @@ from typing import Callable
 from jupytext.cell_reader import BaseCellReader
 from jupytext.cli import jupytext as jupytext_cli
 
-from jupyviv.shared.errors import JupyVivError
+from jupyviv.shared.errors import JupyvivError
 from jupyviv.shared.logs import get_logger
 from jupyviv.shared.utils import dsafe
 
@@ -24,20 +24,20 @@ def _multiline_string(s: str | list[str]) -> str:
 class JupySync():
     def __init__(self, path):
         if not os.path.exists(path):
-            raise JupyVivError(f'Notebook "{path}" not found')
+            raise JupyvivError(f'Notebook "{path}" not found')
         if not path.endswith('.ipynb'):
-            raise JupyVivError('Notebook must have .ipynb extension')
+            raise JupyvivError('Notebook must have .ipynb extension')
         with open(path, 'r') as fp:
             nb_data = json.load(fp)
 
             self.format = dsafe(nb_data, 'metadata', 'language_info', 'file_extension')
             if self.format == None or not isinstance(self.format, str) or not self.format.startswith('.'):
-                raise JupyVivError('Invalid metadata language_info.file_extension')
+                raise JupyvivError('Invalid metadata language_info.file_extension')
             self.format = self.format[1:]
 
             kernel_name = dsafe(nb_data, 'metadata', 'kernelspec', 'name')
             if kernel_name == None or not isinstance(kernel_name, str):
-                raise JupyVivError('Invalid metadata kernelspec.name')
+                raise JupyvivError('Invalid metadata kernelspec.name')
             self.kernel_name = str(kernel_name)
 
         self.nb_original = path
@@ -115,7 +115,7 @@ class JupySync():
         for idx, cell in enumerate(nb['cells']):
             if cell['id'] == id:
                 return idx, nb
-        raise JupyVivError(f'Cell with id {id} not found')
+        raise JupyvivError(f'Cell with id {id} not found')
 
     def cell_at(self, line: int) -> str:
         cell_id = self._line2cell[line]

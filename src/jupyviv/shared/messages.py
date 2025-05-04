@@ -1,13 +1,13 @@
 import asyncio
 from typing import Awaitable, Callable, TypeVar
 
-from jupyviv.shared.errors import JupyVivError
+from jupyviv.shared.errors import JupyvivError
 
-class MessageFormatError(JupyVivError):
+class MessageFormatError(JupyvivError):
     def __init__(self, message: str):
         super().__init__(f'Invalid message format: {message}')
 
-class MessageUnknownError(JupyVivError):
+class MessageUnknownError(JupyvivError):
     def __init__(self, command: str):
         super().__init__(f'Unknown command: {command}')
 

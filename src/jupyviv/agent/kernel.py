@@ -1,9 +1,12 @@
 import asyncio
 import json
+import time
 from typing import Awaitable, Callable
 
+from jupyter_client.kernelspec import NoSuchKernel
 from jupyter_client.manager import start_new_async_kernel
 
+from jupyviv.shared.errors import JupyvivError
 from jupyviv.shared.logs import get_logger
 from jupyviv.shared.messages import MessageHandlerDict, MessageQueue, Message
 from jupyviv.shared.utils import dsafe
@@ -13,8 +16,13 @@ _output_msg_types = ['execute_result', 'display_data', 'stream', 'error']
 
 # returns message handler & runner for kernel
 async def setup_kernel(name: str, send_queue: MessageQueue) -> tuple[MessageHandlerDict, Callable[[], Awaitable[None]]]:
-    _logger.info(f'Starting kernel {name}')
-    km, kc = await start_new_async_kernel(kernel_name=name)
+    _logger.info(f'Starting kernel "{name}"')
+    try:
+        km, kc = await start_new_async_kernel(kernel_name=name)
+    except NoSuchKernel:
+        raise JupyvivError(f'No such kernel "{name}"')
+    except:
+        raise JupyvivError(f'Failed to launch kernel "{name}"')
     _logger.info(f'Kernel ready')
 
     id_kernel2jupyviv = dict[str, str]()
@@ -65,10 +73,43 @@ async def setup_kernel(name: str, send_queue: MessageQueue) -> tuple[MessageHand
     async def _restart(_: Message):
         await km.restart_kernel()
 
+    async def _get_metadata(message: Message):
+        async def _get_language_info():
+            msg_id = kc.kernel_info()
+            timeout = 3
+            remaining = timeout
+            start = time.monotonic()
+            while remaining > 0:
+                remaining = timeout - (time.monotonic() - start)
+                try:
+                    msg = await asyncio.wait_for(kc.get_shell_msg(), timeout=remaining)
+                    if msg['parent_header'].get('msg_id') == msg_id:
+                        return msg['content']['language_info']
+                except asyncio.TimeoutError:
+                    break
+            return None
+
+        language_info = await _get_language_info()
+        name = km.kernel_name
+        spec = km.kernel_spec
+        if language_info is None or name is None or spec is None:
+            await send_queue.put(Message(message.id, 'spec', 'null'))
+            return
+
+        await send_queue.put(Message(message.id, 'metadata', json.dumps({
+            'kernelspec': {
+                'display_name': spec.display_name,
+                'language': spec.language,
+                'name': name,
+            },
+            'language_info': language_info
+        })))
+
     handlers = {
         'execute': _execute,
         'interrupt': _interrupt,
-        'restart': _restart
+        'restart': _restart,
+        'get_metadata': _get_metadata
     }
 
     return (handlers, _kernel_loop)

@@ -1,3 +1,3 @@
-class JupyVivError(Exception):
+class JupyvivError(Exception):
     def __init__(self, message: str):
         super().__init__(message)
