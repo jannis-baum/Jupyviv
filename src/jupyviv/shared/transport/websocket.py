@@ -34,6 +34,8 @@ async def _connection_handler(
                     message = await send_queue.get()
                 _logger.debug(f'Websocket sending message: {message}')
                 await websocket.send(message.to_str())
+                # clear message after successful send
+                message = None
             except (ConnectionClosed, asyncio.CancelledError):
                 dropped_message.message = message
                 break
