@@ -1,10 +1,12 @@
 import asyncio
 import json
+import os
 import time
 from typing import Awaitable, Callable
 
+from jupyter_client.asynchronous.client import AsyncKernelClient
 from jupyter_client.kernelspec import NoSuchKernel
-from jupyter_client.manager import start_new_async_kernel
+from jupyter_client.manager import AsyncKernelManager, start_new_async_kernel
 
 from jupyviv.shared.errors import JupyvivError
 from jupyviv.shared.logs import get_logger
@@ -14,15 +16,26 @@ from jupyviv.shared.utils import dsafe
 _logger = get_logger(__name__)
 _output_msg_types = ['execute_result', 'display_data', 'stream', 'error']
 
-# returns message handler & runner for kernel
-async def setup_kernel(name: str, send_queue: MessageQueue) -> tuple[MessageHandlerDict, Callable[[], Awaitable[None]]]:
-    _logger.info(f'Starting kernel "{name}"')
+async def _start_kernel(name: str) -> tuple[AsyncKernelManager, AsyncKernelClient]:
+    # set $TERM to support only 16 colors so it doesn't use explicit colors and
+    # look horrible in dark mode
+    original_term = os.getenv('TERM')
+    os.environ['TERM'] = 'xterm'
     try:
-        km, kc = await start_new_async_kernel(kernel_name=name)
+        return await start_new_async_kernel(kernel_name=name)
     except NoSuchKernel:
         raise JupyvivError(f'No such kernel "{name}"')
     except:
         raise JupyvivError(f'Failed to launch kernel "{name}"')
+    finally:
+        # reset $TERM after starting kernel
+        if original_term is not None:
+            os.environ['TERM'] = original_term
+
+# returns message handler & runner for kernel
+async def setup_kernel(name: str, send_queue: MessageQueue) -> tuple[MessageHandlerDict, Callable[[], Awaitable[None]]]:
+    _logger.info(f'Starting kernel "{name}"')
+    km, kc = await _start_kernel(name)
     _logger.info(f'Kernel ready')
 
     id_kernel2jupyviv = dict[str, str]()
