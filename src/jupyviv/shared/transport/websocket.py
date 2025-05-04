@@ -98,6 +98,7 @@ async def run_client(
         try:
             async with connect(f'ws://{address}') as websocket:
                 await consumer(websocket)
+            break
         except OSError:
             if attempt == connection_retries - 1:
                 raise
