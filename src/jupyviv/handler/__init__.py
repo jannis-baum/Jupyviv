@@ -7,6 +7,7 @@ from jupyviv.handler.new import create_notebook
 from jupyviv.handler.sync import JupySync
 from jupyviv.handler.vivify import viv_open
 from jupyviv.shared.errors import JupyvivError
+from jupyviv.shared.lifetime import shutdown
 from jupyviv.shared.logs import get_logger
 from jupyviv.shared.messages import MessageHandler, new_queue
 from jupyviv.shared.transport.iostream import run as run_editor_com
@@ -15,11 +16,17 @@ from jupyviv.shared.utils import Subparsers
 
 _logger = get_logger(__name__)
 
-async def main(args):
-    # lazy launch agent (will quit automatically when parent dies)
-    def _launch_agent(kernel_name: str):
-        launch_as_subprocess(kernel_name, args.log, False)
+# lazy launch agent (will quit automatically when parent dies)
+async def _launch_agent(kernel_name: str, log: str):
+    proc = await launch_as_subprocess(kernel_name, log, False)
+    # agent shoudn't terminate on its own; if it does terminate handler
+    async def _handle_agent_stop():
+        await proc.wait()
+        _logger.critical('Agent exited')
+        await shutdown()
+    asyncio.create_task(_handle_agent_stop())
 
+async def main(args):
     should_launch_agent = args.agent is None
     agent_addr = args.agent or f'localhost:{default_port}'
     if args.new is not None:
@@ -29,7 +36,7 @@ async def main(args):
                 _logger.critical('--new [KERNEL_NAME] has to be specified if --agent is not')
                 return 1
             kernel_name = str(args.new)
-            _launch_agent(kernel_name)
+            await _launch_agent(kernel_name, args.log)
             should_launch_agent = False
         else:
             if args.new is not True:
@@ -45,7 +52,7 @@ async def main(args):
     try:
         with JupySync(args.notebook) as jupy_sync:
             viv_open(args.notebook)
-            if should_launch_agent: _launch_agent(jupy_sync.kernel_name)
+            if should_launch_agent: await _launch_agent(jupy_sync.kernel_name, args.log)
 
             send_queue_editor = new_queue()
             send_queue_agent = new_queue()

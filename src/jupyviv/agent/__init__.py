@@ -27,12 +27,13 @@ async def main(args):
         _logger.critical(e)
         return 1
 
-def launch_as_subprocess(kernel_name: str, log_level: str, outlive_parent: bool) -> subprocess.Popen:
-    return subprocess.Popen([
+async def launch_as_subprocess(kernel_name: str, log_level: str, outlive_parent: bool) -> asyncio.subprocess.Process:
+    return await asyncio.create_subprocess_exec(
         sys.argv[0],
-         '--log', log_level, '--outlive-parent' if outlive_parent else '--no-outlive-parent',
-         'agent', kernel_name
-     ], stderr=sys.stderr, stdout=subprocess.DEVNULL)
+        '--log', log_level, '--outlive-parent' if outlive_parent else '--no-outlive-parent',
+        'agent', kernel_name,
+        stderr=sys.stderr, stdout=subprocess.DEVNULL
+    )
 
 def setup_agent_args(subparsers: Subparsers):
     parser = subparsers.add_parser('agent', help='Run the agent')
