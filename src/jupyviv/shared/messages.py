@@ -1,6 +1,6 @@
-import asyncio
-from typing import Awaitable, Callable, TypeVar
+from typing import Awaitable, Callable
 
+from jupyviv.shared.deque import Deque
 from jupyviv.shared.errors import JupyvivError
 
 class MessageFormatError(JupyvivError):
@@ -10,8 +10,6 @@ class MessageFormatError(JupyvivError):
 class MessageUnknownError(JupyvivError):
     def __init__(self, command: str):
         super().__init__(f'Unknown command: {command}')
-
-T = TypeVar("T")
 
 class Message:
     def __init__(self, id: str, command: str, args: str = ''):
@@ -41,6 +39,6 @@ class MessageHandler:
             raise MessageUnknownError(message.command)
         await handler(message)
 
-type MessageQueue = asyncio.Queue[Message]
+type MessageQueue = Deque[Message]
 def new_queue() -> MessageQueue:
-    return asyncio.Queue[Message]()
+    return Deque[Message]()

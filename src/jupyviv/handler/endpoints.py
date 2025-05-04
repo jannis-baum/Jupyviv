@@ -18,7 +18,7 @@ def setup_endpoints(
 
     # EDITOR ENDPOINTS ---------------------------------------------------------
     async def get_script(message: Message):
-        await send_queue_io.put(Message(message.id, 'script', jupy_sync.script))
+        send_queue_io.put(Message(message.id, 'script', jupy_sync.script))
 
     async def open_notebook(_: Message):
         viv_open(jupy_sync.nb_original)
@@ -30,13 +30,13 @@ def setup_endpoints(
         line_i = int(message.args)
         cell_id = jupy_sync.cell_at(line_i)
         code = jupy_sync.code_for_cell(cell_id)
-        await send_queue_agent.put(Message(cell_id, 'execute', code))
+        send_queue_agent.put(Message(cell_id, 'execute', code))
 
     async def interrupt(message: Message):
-        await send_queue_agent.put(Message(message.id, 'interrupt'))
+        send_queue_agent.put(Message(message.id, 'interrupt'))
 
     async def restart(message: Message):
-        await send_queue_agent.put(Message(message.id, 'restart'))
+        send_queue_agent.put(Message(message.id, 'restart'))
 
     handlers_io: MessageHandlerDict = {
         'script': get_script,

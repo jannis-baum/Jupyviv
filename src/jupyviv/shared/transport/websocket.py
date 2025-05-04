@@ -31,7 +31,7 @@ async def _connection_handler(
                     message = dropped_message.message
                     dropped_message.message = None
                 else:
-                    message = await send_queue.get()
+                    message = await send_queue.popleft()
                 _logger.debug(f'Websocket sending message: {message}')
                 await websocket.send(message.to_str())
                 # clear message after successful send
