@@ -18,11 +18,15 @@ _start_time = time.strftime('%y-%m-%d_%H-%M-%S', time.localtime())
 _cache_dir = os.path.expanduser(os.path.join('~', '.cache', 'jupyviv'))
 _persistent_queue_name = f'agent_{_start_time}_queue.txt'
 _persistent_queue_path = os.path.join(_cache_dir, _persistent_queue_name)
-os.makedirs(_cache_dir, exist_ok=True)
 
 def _persist_deque(deque: collections.deque[Message]):
-    messages = list(deque)
-    store_str = ''.join([message.to_str() + '\0\n' for message in messages])
+    # remove file if empty
+    if not deque and os.path.exists(_persistent_queue_path):
+        os.remove(_persistent_queue_path)
+        return
+
+    store_str = ''.join([message.to_str() + '\0\n' for message in list(deque)])
+    os.makedirs(_cache_dir, exist_ok=True)
     with open(_persistent_queue_path, 'w') as fp:
         fp.write(store_str)
 
