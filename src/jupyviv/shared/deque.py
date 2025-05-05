@@ -1,18 +1,19 @@
 from asyncio import QueueEmpty
 from asyncio.mixins import _LoopBoundMixin
 import collections
-from typing import Generic, TypeVar
+from typing import Callable, Generic, TypeVar
 
 T = TypeVar('T')
 
 # taken & adjusted from asyncio.Queue
 # removes all features from Queue we don't need, adds opposite putleft
-# analogously to existing append
+# analogously to existing append & change handler
 class Deque(_LoopBoundMixin, Generic[T]):
     def __init__(self):
         self._getters = collections.deque()
         self._putters = collections.deque()
         self._deque = collections.deque[T]()
+        self.change_handler: Callable[[collections.deque[T]], None] | None = None
 
     def _wakeup_next(self, waiters):
         # wake up the next waiter (if any) that isn't cancelled.
@@ -22,16 +23,23 @@ class Deque(_LoopBoundMixin, Generic[T]):
                 waiter.set_result(None)
                 break
 
+    # change handler to allow side effects
+    def _handle_change(self):
+        if self.change_handler is not None:
+            self.change_handler(self._deque)
+
     def empty(self):
         '''Return True if the deque is empty, False otherwise.'''
         return not self._deque
 
     def put(self, item: T):
         self._deque.append(item)
+        self._handle_change()
         self._wakeup_next(self._getters)
 
     def putleft(self, item: T):
         self._deque.appendleft(item)
+        self._handle_change()
         self._wakeup_next(self._getters)
 
     async def popleft(self) -> T:
@@ -64,5 +72,6 @@ class Deque(_LoopBoundMixin, Generic[T]):
         if self.empty():
             raise QueueEmpty
         item = self._deque.popleft()
+        self._handle_change()
         self._wakeup_next(self._putters)
         return item
