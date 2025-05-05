@@ -6,7 +6,7 @@ from typing import Generic, TypeVar
 T = TypeVar('T')
 
 # taken & adjusted from asyncio.Queue
-# removes all features from Queue we don't need, adds opposite appendleft
+# removes all features from Queue we don't need, adds opposite putleft
 # analogously to existing append
 class Deque(_LoopBoundMixin, Generic[T]):
     def __init__(self):
