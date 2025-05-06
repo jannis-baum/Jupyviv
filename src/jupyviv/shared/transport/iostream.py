@@ -29,7 +29,7 @@ async def run(
 
     async def _sender():
         while True:
-            message = await send_queue.get()
+            message = await send_queue.popleft()
             _logger.debug(f'IO sending message: {message}')
             writer.writelines([f'{message.to_str()}\n'.encode()])
 

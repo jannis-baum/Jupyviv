@@ -28,7 +28,7 @@ async def create_notebook(path: str, agent_addr: str):
     socket_task = asyncio.create_task(run_communication())
 
     # get metadata
-    await send_queue.put(Message('new', 'get_metadata'))
+    send_queue.put(Message('new', 'get_metadata'))
     try:
         metadata = await asyncio.wait_for(metadata_queue.get(), timeout=10)
     except:

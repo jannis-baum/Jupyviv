@@ -9,7 +9,7 @@ from jupyviv.handler.vivify import viv_open
 from jupyviv.shared.errors import JupyvivError
 from jupyviv.shared.lifetime import shutdown
 from jupyviv.shared.logs import get_logger
-from jupyviv.shared.messages import MessageHandler, new_queue
+from jupyviv.shared.messages import Message, MessageHandler, new_queue
 from jupyviv.shared.transport.iostream import run as run_editor_com
 from jupyviv.shared.transport.websocket import default_port, run_client as run_agent_com
 from jupyviv.shared.utils import Subparsers
@@ -72,10 +72,35 @@ async def main(args):
         _logger.critical(e)
         return 1
 
+async def absorb(args):
+    try:
+        with open(args.queue, 'r') as fp:
+            message_strs = fp.read().split('\0\n')[:-1]
+
+        with JupySync(args.notebook) as jupy_sync:
+            viv_open(args.notebook)
+
+            _, handlers_agent = setup_endpoints(jupy_sync, new_queue(), new_queue())
+            recv_handler_agent = MessageHandler(handlers_agent)
+
+            try:
+                for message_str in message_strs:
+                    await recv_handler_agent.handle(message_str)
+            except asyncio.CancelledError: # keyboard interrupt
+                return 0
+    except Exception as e:
+        _logger.critical(e)
+        return 1
+
 def setup_handler_args(subparsers: Subparsers):
-    parser = subparsers.add_parser('handler', help='Run the handler')
-    parser.add_argument('notebook', type=str)
-    parser.add_argument('--agent', type=str, help='Address to connect to a running agent')
-    parser.add_argument('--new', nargs='?', const=True, metavar='KERNEL_NAME',
+    parser_handler = subparsers.add_parser('handler', help='Run the handler')
+    parser_handler.add_argument('notebook', type=str)
+    parser_handler.add_argument('--agent', type=str, help='Address to connect to a running agent')
+    parser_handler.add_argument('--new', nargs='?', const=True, metavar='KERNEL_NAME',
         help='Create a new notebook. Specify kernel name as argument iff not providing --agent')
-    parser.set_defaults(func=main)
+    parser_handler.set_defaults(func=main)
+
+    parser_absorb = subparsers.add_parser('absorb', help='Absorb an agent\'s queue into a Notebook')
+    parser_absorb.add_argument('queue', type=str)
+    parser_absorb.add_argument('notebook', type=str)
+    parser_absorb.set_defaults(func=absorb)

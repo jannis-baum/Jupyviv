@@ -56,17 +56,17 @@ async def setup_kernel(name: str, send_queue: MessageQueue) -> tuple[MessageHand
                 if msg_type == 'status':
                     # "busy" when starting to execute, "idle" when done
                     state = str(dsafe(content, 'execution_state'))
-                    await send_queue.put(Message(jupyviv_id, 'status', state))
+                    send_queue.put(Message(jupyviv_id, 'status', state))
                     continue
 
                 if msg_type == 'execute_input':
                     execution_count = str(dsafe(content, 'execution_count'))
-                    await send_queue.put(Message(jupyviv_id, 'execute_input', execution_count))
+                    send_queue.put(Message(jupyviv_id, 'execute_input', execution_count))
                     continue
 
                 if msg_type in _output_msg_types and type(content) == dict:
                     data = json.dumps({ 'output_type': msg_type, **content })
-                    await send_queue.put(Message(jupyviv_id, 'output', data))
+                    send_queue.put(Message(jupyviv_id, 'output', data))
                     continue
 
                 _logger.info(f'Received unknown message: {msg_type} with content: {content}')
@@ -106,10 +106,10 @@ async def setup_kernel(name: str, send_queue: MessageQueue) -> tuple[MessageHand
         name = km.kernel_name
         spec = km.kernel_spec
         if language_info is None or name is None or spec is None:
-            await send_queue.put(Message(message.id, 'spec', 'null'))
+            send_queue.put(Message(message.id, 'spec', 'null'))
             return
 
-        await send_queue.put(Message(message.id, 'metadata', json.dumps({
+        send_queue.put(Message(message.id, 'metadata', json.dumps({
             'kernelspec': {
                 'display_name': spec.display_name,
                 'language': spec.language,
