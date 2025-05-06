@@ -28,8 +28,8 @@ def setup_endpoints(
 
     async def run_at(message: Message):
         line_i = int(message.args)
-        cell_id = jupy_sync.cell_at(line_i)
-        code = jupy_sync.code_for_cell(cell_id)
+        cell_id = jupy_sync.id_at_line(line_i)
+        code = jupy_sync.code_for_id(cell_id)
         send_queue_agent.put(Message(cell_id, 'execute', code))
 
     async def interrupt(message: Message):
@@ -51,14 +51,14 @@ def setup_endpoints(
     async def status(message: Message):
         if message.args == 'busy':
             # start of execution: reset count & outputs, set custom isRunning
-            jupy_sync.modify_cell(message.id, lambda cell: {
+            jupy_sync.modify_at_id(message.id, lambda cell: {
                 **cell, 'execution_count': None, 'outputs': [], 'metadata': {
                     **cell['metadata'], 'jupyviv': { 'isRunning': True }
                 }
             })
         if message.args == 'idle':
             # execution done, remove custom isRunning
-            jupy_sync.modify_cell(message.id, lambda cell: {
+            jupy_sync.modify_at_id(message.id, lambda cell: {
                 **cell, 'metadata': {
                     k: v for k, v in cell['metadata'].items() if k != 'jupyviv'
                 }
@@ -66,13 +66,13 @@ def setup_endpoints(
         _sync(False)
 
     async def execute_input(message: Message):
-        jupy_sync.modify_cell(message.id, lambda cell: {
+        jupy_sync.modify_at_id(message.id, lambda cell: {
             **cell, 'execution_count': int(message.args)
         })
         _sync(False)
 
     async def output(message: Message):
-        jupy_sync.modify_cell(message.id, lambda cell: {
+        jupy_sync.modify_at_id(message.id, lambda cell: {
             **cell, 'outputs': cell['outputs'] + [json.loads(message.args)]
         })
         _sync(False)
