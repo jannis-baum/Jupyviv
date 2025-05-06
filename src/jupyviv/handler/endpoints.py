@@ -1,10 +1,7 @@
 import json
 from jupyviv.handler.sync import JupySync
 from jupyviv.handler.vivify import viv_open, viv_reload
-from jupyviv.shared.logs import get_logger
 from jupyviv.shared.messages import Message, MessageHandlerDict, MessageQueue
-
-_logger = get_logger(__name__)
 
 # returns handlers for editor & agent
 def setup_endpoints(

@@ -2,7 +2,7 @@ import json
 import os
 from pathlib import Path
 import shutil
-from typing import Callable, TypeVar
+from typing import Callable
 
 from jupytext.cell_reader import BaseCellReader
 from jupytext.cli import jupytext as jupytext_cli
