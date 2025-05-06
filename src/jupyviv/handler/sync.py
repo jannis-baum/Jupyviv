@@ -158,3 +158,21 @@ class JupySync():
         nb = self._read_nb()
         nb['cells'] = f(nb['cells'])
         self._write_nb(nb)
+
+    def clear_execution(self):
+        self.modify_all_cells(lambda cells: [
+            { **cell, 'execution_count': None, 'outputs': [] } \
+                if cell['cell_type'] == 'code' \
+                else cell
+            for cell in cells
+        ])
+
+    def enumerate_execution(self):
+        def _enumerate(cells: list[dict]) -> list[dict]:
+            idx = 1
+            for cell in cells:
+                if cell['cell_type'] != 'code': continue
+                cell['execution_count'] = idx
+                idx += 1
+            return cells
+        self.modify_all_cells(_enumerate)

@@ -38,13 +38,23 @@ def setup_endpoints(
     async def restart(message: Message):
         send_queue_agent.put(Message(message.id, 'restart'))
 
+    async def clear_execution(_: Message):
+        jupy_sync.clear_execution()
+        _sync(False)
+
+    async def enumerate_execution(_: Message):
+        jupy_sync.enumerate_execution()
+        _sync(False)
+
     handlers_io: MessageHandlerDict = {
         'script': get_script,
         'viv_open': open_notebook,
         'sync': sync,
         'run_at': run_at,
         'interrupt': interrupt,
-        'restart': restart
+        'restart': restart,
+        'clear_execution': clear_execution,
+        'enumerate_execution': enumerate_execution,
     }
 
     # AGENT ENDPOINTS ----------------------------------------------------------
