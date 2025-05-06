@@ -29,6 +29,11 @@ def setup_endpoints(
         code = jupy_sync.code_for_id(cell_id)
         send_queue_agent.put(Message(cell_id, 'execute', code))
 
+    async def run_all(_: Message):
+        ids_and_code = jupy_sync.all_ids_and_code()
+        for cell_id, code in ids_and_code:
+            send_queue_agent.put(Message(cell_id, 'execute', code))
+
     async def interrupt(message: Message):
         send_queue_agent.put(Message(message.id, 'interrupt'))
 
@@ -48,6 +53,7 @@ def setup_endpoints(
         'viv_open': open_notebook,
         'sync': sync,
         'run_at': run_at,
+        'run_all': run_all,
         'interrupt': interrupt,
         'restart': restart,
         'clear_execution': clear_execution,
