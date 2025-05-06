@@ -61,6 +61,10 @@ class JupySync():
         with open(self.nb_copy, 'r') as fp:
             return json.load(fp)
 
+    def _write_nb(self, nb: dict):
+        with open(self.nb_copy, 'w') as fp:
+            json.dump(nb, fp, indent=2)
+
     def _sync_script(self):
         # save original state of script so we can restore after syncing to
         # prevent any changes that are made to the file open in the editor
@@ -141,5 +145,10 @@ class JupySync():
         idx, nb = self._find_cell(id)
         cell = f(nb['cells'][idx])
         nb['cells'][idx] = cell
-        with open(self.nb_copy, 'w') as fp:
-            json.dump(nb, fp, indent=2)
+        self._write_nb(nb)
+
+    def modify_all_cells(self, f: Callable[[dict, int], dict]):
+        nb = self._read_nb()
+        cells = [f(cell, idx) for idx, cell in enumerate(nb['cells'])]
+        nb['cells'] = cells
+        self._write_nb(nb)
