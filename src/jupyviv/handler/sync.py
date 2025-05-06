@@ -61,6 +61,12 @@ class JupySync():
         with open(self.nb_copy, 'r') as fp:
             return json.load(fp)
 
+    def _write_nb(self, nb: dict):
+        with open(self.nb_copy, 'w') as fp:
+            json.dump(nb, fp, indent=2)
+
+    # MARK: syncing ------------------------------------------------------------
+    # --------------------------------------------------------------------------
     def _sync_script(self):
         # save original state of script so we can restore after syncing to
         # prevent any changes that are made to the file open in the editor
@@ -109,20 +115,6 @@ class JupySync():
         script_file.write_bytes(script_content)
         os.utime(self.script, ns=(script_atime, script_mtime))
 
-    # index of cell & notebook content
-    def _find_cell(self, id: str) -> tuple[int, dict]:
-        nb = self._read_nb()
-        for idx, cell in enumerate(nb['cells']):
-            if cell['id'] == id:
-                return idx, nb
-        raise JupyvivError(f'Cell with id {id} not found')
-
-    def cell_at(self, line: int) -> str:
-        cell_id = self._line2cell[line]
-        if cell_id is None:
-            raise LookupError(f'No cell at line {line}')
-        return cell_id
-
     # sync notebook copy to original (e.g. after setting exec data)
     # script: sync script to notebook copy first
     def sync(self, script: bool = True):
@@ -133,13 +125,58 @@ class JupySync():
         shutil.copy(self.nb_copy, self.nb_original)
         _jupytext(self.nb_original, '--update-metadata', '{"jupytext":null}')
 
-    def code_for_cell(self, id: str) -> str:
-        idx, nb = self._find_cell(id)
-        return _multiline_string(nb['cells'][idx]['source'])
+    # MARK: cell functions -----------------------------------------------------
+    # --------------------------------------------------------------------------
+    # index of cell & notebook content
+    def _find_id(self, id: str) -> tuple[int, dict]:
+        nb = self._read_nb()
+        for idx, cell in enumerate(nb['cells']):
+            if cell['id'] == id:
+                return idx, nb
+        raise JupyvivError(f'Cell with id {id} not found')
 
-    def modify_cell(self, id: str, f: Callable[[dict], dict]):
-        idx, nb = self._find_cell(id)
+    def id_at_line(self, line: int) -> str:
+        cell_id = self._line2cell[line]
+        if cell_id is None:
+            raise LookupError(f'No cell at line {line}')
+        return cell_id
+
+    def code_for_cell(self, cell: dict) -> str:
+        return _multiline_string(cell['source'])
+
+    def code_for_id(self, id: str) -> str:
+        idx, nb = self._find_id(id)
+        return self.code_for_cell(nb['cells'][idx])
+
+    def all_ids_and_code(self) -> list[tuple[str, str]]:
+        cells = self._read_nb()['cells']
+        return [(cell['id'], self.code_for_cell(cell)) for cell in cells]
+
+    def modify_at_id(self, id: str, f: Callable[[dict], dict]):
+        idx, nb = self._find_id(id)
         cell = f(nb['cells'][idx])
         nb['cells'][idx] = cell
-        with open(self.nb_copy, 'w') as fp:
-            json.dump(nb, fp, indent=2)
+        self._write_nb(nb)
+
+    def modify_all_cells(self, f: Callable[[list[dict]], list[dict]]):
+        nb = self._read_nb()
+        nb['cells'] = f(nb['cells'])
+        self._write_nb(nb)
+
+    def clear_execution(self):
+        self.modify_all_cells(lambda cells: [
+            { **cell, 'execution_count': None, 'outputs': [] } \
+                if cell['cell_type'] == 'code' \
+                else cell
+            for cell in cells
+        ])
+
+    def enumerate_execution(self):
+        def _enumerate(cells: list[dict]) -> list[dict]:
+            idx = 1
+            for cell in cells:
+                if cell['cell_type'] != 'code': continue
+                cell['execution_count'] = idx
+                idx += 1
+            return cells
+        self.modify_all_cells(_enumerate)

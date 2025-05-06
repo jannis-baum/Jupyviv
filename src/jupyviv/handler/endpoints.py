@@ -1,10 +1,7 @@
 import json
 from jupyviv.handler.sync import JupySync
 from jupyviv.handler.vivify import viv_open, viv_reload
-from jupyviv.shared.logs import get_logger
 from jupyviv.shared.messages import Message, MessageHandlerDict, MessageQueue
-
-_logger = get_logger(__name__)
 
 # returns handlers for editor & agent
 def setup_endpoints(
@@ -28,9 +25,14 @@ def setup_endpoints(
 
     async def run_at(message: Message):
         line_i = int(message.args)
-        cell_id = jupy_sync.cell_at(line_i)
-        code = jupy_sync.code_for_cell(cell_id)
+        cell_id = jupy_sync.id_at_line(line_i)
+        code = jupy_sync.code_for_id(cell_id)
         send_queue_agent.put(Message(cell_id, 'execute', code))
+
+    async def run_all(_: Message):
+        ids_and_code = jupy_sync.all_ids_and_code()
+        for cell_id, code in ids_and_code:
+            send_queue_agent.put(Message(cell_id, 'execute', code))
 
     async def interrupt(message: Message):
         send_queue_agent.put(Message(message.id, 'interrupt'))
@@ -38,27 +40,38 @@ def setup_endpoints(
     async def restart(message: Message):
         send_queue_agent.put(Message(message.id, 'restart'))
 
+    async def clear_execution(_: Message):
+        jupy_sync.clear_execution()
+        _sync(False)
+
+    async def enumerate_execution(_: Message):
+        jupy_sync.enumerate_execution()
+        _sync(False)
+
     handlers_io: MessageHandlerDict = {
         'script': get_script,
         'viv_open': open_notebook,
         'sync': sync,
         'run_at': run_at,
+        'run_all': run_all,
         'interrupt': interrupt,
-        'restart': restart
+        'restart': restart,
+        'clear_execution': clear_execution,
+        'enumerate_execution': enumerate_execution,
     }
 
     # AGENT ENDPOINTS ----------------------------------------------------------
     async def status(message: Message):
         if message.args == 'busy':
             # start of execution: reset count & outputs, set custom isRunning
-            jupy_sync.modify_cell(message.id, lambda cell: {
+            jupy_sync.modify_at_id(message.id, lambda cell: {
                 **cell, 'execution_count': None, 'outputs': [], 'metadata': {
                     **cell['metadata'], 'jupyviv': { 'isRunning': True }
                 }
             })
         if message.args == 'idle':
             # execution done, remove custom isRunning
-            jupy_sync.modify_cell(message.id, lambda cell: {
+            jupy_sync.modify_at_id(message.id, lambda cell: {
                 **cell, 'metadata': {
                     k: v for k, v in cell['metadata'].items() if k != 'jupyviv'
                 }
@@ -66,13 +79,13 @@ def setup_endpoints(
         _sync(False)
 
     async def execute_input(message: Message):
-        jupy_sync.modify_cell(message.id, lambda cell: {
+        jupy_sync.modify_at_id(message.id, lambda cell: {
             **cell, 'execution_count': int(message.args)
         })
         _sync(False)
 
     async def output(message: Message):
-        jupy_sync.modify_cell(message.id, lambda cell: {
+        jupy_sync.modify_at_id(message.id, lambda cell: {
             **cell, 'outputs': cell['outputs'] + [json.loads(message.args)]
         })
         _sync(False)
