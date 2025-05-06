@@ -2,7 +2,7 @@ import json
 import os
 from pathlib import Path
 import shutil
-from typing import Callable
+from typing import Callable, TypeVar
 
 from jupytext.cell_reader import BaseCellReader
 from jupytext.cli import jupytext as jupytext_cli
@@ -154,8 +154,7 @@ class JupySync():
         nb['cells'][idx] = cell
         self._write_nb(nb)
 
-    def modify_cells(self, f: Callable[[dict, int], dict]):
+    def modify_all_cells(self, f: Callable[[list[dict]], list[dict]]):
         nb = self._read_nb()
-        cells = [f(cell, idx) for idx, cell in enumerate(nb['cells'])]
-        nb['cells'] = cells
+        nb['cells'] = f(nb['cells'])
         self._write_nb(nb)
