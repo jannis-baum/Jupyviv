@@ -145,6 +145,8 @@ class JupySync():
         return cell_id
 
     def code_for_cell(self, cell: dict) -> str:
+        if not self._is_code_cell(cell):
+            raise JupyvivError('Not a code cell')
         return _multiline_string(cell['source'])
 
     def code_for_id(self, id: str) -> str:
