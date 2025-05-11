@@ -128,6 +128,9 @@ class JupySync():
     # MARK: cell functions -----------------------------------------------------
     # --------------------------------------------------------------------------
     # index of cell & notebook content
+    def _is_code_cell(self, cell: dict) -> bool:
+        return cell['cell_type'] == 'code'
+
     def _find_id(self, id: str) -> tuple[int, dict]:
         nb = self._read_nb()
         for idx, cell in enumerate(nb['cells']):
@@ -142,6 +145,8 @@ class JupySync():
         return cell_id
 
     def code_for_cell(self, cell: dict) -> str:
+        if not self._is_code_cell(cell):
+            raise JupyvivError('Not a code cell')
         return _multiline_string(cell['source'])
 
     def code_for_id(self, id: str) -> str:
@@ -150,7 +155,7 @@ class JupySync():
 
     def all_ids_and_code(self) -> list[tuple[str, str]]:
         cells = self._read_nb()['cells']
-        return [(cell['id'], self.code_for_cell(cell)) for cell in cells]
+        return [(cell['id'], self.code_for_cell(cell)) for cell in cells if self._is_code_cell(cell)]
 
     def modify_at_id(self, id: str, f: Callable[[dict], dict]):
         idx, nb = self._find_id(id)
@@ -166,7 +171,7 @@ class JupySync():
     def clear_execution(self):
         self.modify_all_cells(lambda cells: [
             { **cell, 'execution_count': None, 'outputs': [] } \
-                if cell['cell_type'] == 'code' \
+                if self._is_code_cell(cell) \
                 else cell
             for cell in cells
         ])
@@ -175,7 +180,7 @@ class JupySync():
         def _enumerate(cells: list[dict]) -> list[dict]:
             idx = 1
             for cell in cells:
-                if cell['cell_type'] != 'code': continue
+                if not self._is_code_cell(cell): continue
                 cell['execution_count'] = idx
                 idx += 1
             return cells
