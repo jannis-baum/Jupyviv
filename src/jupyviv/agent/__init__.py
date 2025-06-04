@@ -64,5 +64,5 @@ def setup_agent_args(subparsers: Subparsers):
     parser.add_argument('--port', type=int, default=default_port, help='Port to run the agent on')
     parser.add_argument('--persist-unsent-messages',
                         action=argparse.BooleanOptionalAction, default=True,
-                        help=f'Persist unsent messages in {_cache_dir}')
+                        help=f'Persist unsent messages in {_cache_dir}, enabled by default')
     parser.set_defaults(func=main)
