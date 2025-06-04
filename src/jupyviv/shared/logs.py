@@ -1,16 +1,17 @@
 import logging
 import sys
+from typing import Union
 
 _registered_handlers = set[logging.StreamHandler]()
 
 log_levels = {
     level: name
-    for name, level in logging.getLevelNamesMapping().items()
+    for name, level in logging._nameToLevel.items()
     if level != 0
 }.values() # dict approach to remove duplicates (WARN, WARNING)
 default_log_level = logging.getLevelName(logging.getLogger().level)
 
-def set_loglevel(level: str | int):
+def set_loglevel(level: Union[str, int]):
     for handler in _registered_handlers:
         handler.setLevel(level)
 
