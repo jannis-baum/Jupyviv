@@ -1,19 +1,20 @@
 from asyncio import QueueEmpty
-from asyncio.mixins import _LoopBoundMixin
+import asyncio.events
 import collections
-from typing import Callable, Generic, TypeVar
+from typing import Callable, Generic, TypeVar, Optional
 
 T = TypeVar('T')
 
 # taken & adjusted from asyncio.Queue
 # removes all features from Queue we don't need, adds opposite putleft
 # analogously to existing append & change handler
-class Deque(_LoopBoundMixin, Generic[T]):
+class Deque(Generic[T]):
     def __init__(self):
+        self._loop = asyncio.events.get_event_loop()
         self._getters = collections.deque()
         self._putters = collections.deque()
         self._deque = collections.deque[T]()
-        self.change_handler: Callable[[collections.deque[T]], None] | None = None
+        self.change_handler: Optional[Callable[[collections.deque[T]], None]] = None
 
     def _wakeup_next(self, waiters):
         # wake up the next waiter (if any) that isn't cancelled.
@@ -46,7 +47,7 @@ class Deque(_LoopBoundMixin, Generic[T]):
         '''Remove and return an item from the deque.
         If deque is empty, wait until an item is available.'''
         while self.empty():
-            getter = self._get_loop().create_future()
+            getter = self._loop.create_future()
             self._getters.append(getter)
             try:
                 await getter

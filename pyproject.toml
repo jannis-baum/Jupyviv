@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     { name = "Jannis Baum" }
 ]
-requires-python = ">=3.12"
+requires-python = ">=3.9"
 dependencies = [
     "jupyter-client>=8.6.3",
     "jupytext>=1.16.7",

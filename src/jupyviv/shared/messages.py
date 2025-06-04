@@ -27,7 +27,7 @@ class Message:
     def to_str(self):
         return ' '.join([str(self.id), self.command, self.args])
 
-type MessageHandlerDict = dict[str, Callable[[Message], Awaitable[None]]]
+MessageHandlerDict = dict[str, Callable[[Message], Awaitable[None]]]
 class MessageHandler:
     def __init__(self, handlers: MessageHandlerDict):
         self.handlers = handlers
@@ -39,6 +39,6 @@ class MessageHandler:
             raise MessageUnknownError(message.command)
         await handler(message)
 
-type MessageQueue = Deque[Message]
+MessageQueue = Deque[Message]
 def new_queue() -> MessageQueue:
     return Deque[Message]()

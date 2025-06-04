@@ -2,7 +2,7 @@ import json
 import os
 from pathlib import Path
 import shutil
-from typing import Callable
+from typing import Callable, Union
 
 from jupytext.cell_reader import BaseCellReader
 from jupytext.cli import jupytext as jupytext_cli
@@ -16,7 +16,7 @@ _logger = get_logger(__name__)
 def _jupytext(*args: str):
     jupytext_cli(['--quiet', *args])
 
-def _multiline_string(s: str | list[str]) -> str:
+def _multiline_string(s: Union[str, list[str]]) -> str:
     if isinstance(s, str):
         return s
     return '\n'.join(s)
