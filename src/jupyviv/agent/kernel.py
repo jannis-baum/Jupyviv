@@ -17,10 +17,12 @@ _logger = get_logger(__name__)
 _output_msg_types = ['execute_result', 'display_data', 'stream', 'error']
 
 async def _start_kernel(name: str) -> tuple[AsyncKernelManager, AsyncKernelClient]:
+    original_env = os.environ.copy()
     # set $TERM to support only 16 colors so it doesn't use explicit colors and
     # look horrible in dark mode
-    original_term = os.getenv('TERM')
     os.environ['TERM'] = 'xterm'
+    # see https://github.com/plotly/plotly.py/blob/main/doc/python/renderers.md#setting-the-default-renderer
+    os.environ['PLOTLY_RENDERER'] = 'notebook_connected'
     try:
         return await start_new_async_kernel(kernel_name=name)
     except NoSuchKernel:
@@ -29,8 +31,7 @@ async def _start_kernel(name: str) -> tuple[AsyncKernelManager, AsyncKernelClien
         raise JupyvivError(f'Failed to launch kernel "{name}"')
     finally:
         # reset $TERM after starting kernel
-        if original_term is not None:
-            os.environ['TERM'] = original_term
+        os.environ = original_env
 
 # returns message handler & runner for kernel
 async def setup_kernel(name: str, send_queue: MessageQueue) -> tuple[MessageHandlerDict, Callable[[], Awaitable[None]]]:

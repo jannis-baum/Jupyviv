@@ -9,6 +9,7 @@ from jupyviv.shared.messages import MessageHandler, MessageQueue
 from jupyviv.shared.logs import get_logger
 
 _logger = get_logger(__name__)
+_max_msg_size = 50 * 1000 * 1000 # 50MB
 
 # create send/receive handler for server & client
 async def _connection_handler(
@@ -36,7 +37,7 @@ async def _connection_handler(
         try:
             async for message in websocket:
                 try:
-                    _logger.debug(f'IO received message string: {str(message)}')
+                    _logger.debug(f'IO received message with length: {len(message)}')
                     await recv_handler.handle(str(message))
                 except Exception as e:
                     _logger.error(f'Receive error {type(e)}: {e}')
@@ -71,7 +72,7 @@ async def run_server(
         finally:
             is_connected = False
 
-    async with serve(connection_handler, 'localhost', port) as server:
+    async with serve(connection_handler, 'localhost', port, max_size=_max_msg_size) as server:
         await server.serve_forever()
 
 async def run_client(
@@ -86,7 +87,7 @@ async def run_client(
 
     for attempt in range(connection_retries):
         try:
-            async with connect(f'ws://{address}') as websocket:
+            async with connect(f'ws://{address}', max_size=_max_msg_size) as websocket:
                 await consumer(websocket)
             break
         except OSError:
