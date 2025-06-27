@@ -5,11 +5,12 @@ from websockets.asyncio.connection import Connection
 from websockets.asyncio.server import ServerConnection, serve
 from websockets.exceptions import ConnectionClosed
 
-from jupyviv.shared.messages import MessageHandler, MessageQueue
 from jupyviv.shared.logs import get_logger
+from jupyviv.shared.messages import MessageHandler, MessageQueue
 
 _logger = get_logger(__name__)
-_max_msg_size = 50 * 1000 * 1000 # 50MB
+_max_msg_size = 50 * 1000 * 1000  # 50MB
+
 
 # create send/receive handler for server & client
 async def _connection_handler(
@@ -22,7 +23,7 @@ async def _connection_handler(
         while True:
             try:
                 message = await send_queue.popleft()
-                _logger.debug(f'Websocket sending message: {message}')
+                _logger.debug(f"Websocket sending message: {message}")
                 await websocket.send(message.to_str())
                 # clear message after successful send
                 message = None
@@ -31,16 +32,16 @@ async def _connection_handler(
                     send_queue.putleft(message)
                 break
             except Exception as e:
-                _logger.error(f'Send error {type(e)}: {e}')
+                _logger.error(f"Send error {type(e)}: {e}")
 
     async def _receiver():
         try:
             async for message in websocket:
                 try:
-                    _logger.debug(f'IO received message with length: {len(message)}')
+                    _logger.debug(f"IO received message with length: {len(message)}")
                     await recv_handler.handle(str(message))
                 except Exception as e:
-                    _logger.error(f'Receive error {type(e)}: {e}')
+                    _logger.error(f"Receive error {type(e)}: {e}")
         except (ConnectionClosed, asyncio.CancelledError):
             pass
 
@@ -50,20 +51,19 @@ async def _connection_handler(
     sender_task.cancel()
     await sender_task
 
+
 default_port = 8000
 
-async def run_server(
-    port: int,
-    recv_handler: MessageHandler,
-    send_queue: MessageQueue
-):
+
+async def run_server(port: int, recv_handler: MessageHandler, send_queue: MessageQueue):
     # message that was dropped due to disconnect or other errors
     is_connected = False
+
     async def connection_handler(websocket: ServerConnection):
         # restrict to single connection
         nonlocal is_connected
         if is_connected:
-            await websocket.close(1002) # 1002: Protocol Error
+            await websocket.close(1002)  # 1002: Protocol Error
             return
         is_connected = True
         # keep track of connection closing
@@ -72,14 +72,17 @@ async def run_server(
         finally:
             is_connected = False
 
-    async with serve(connection_handler, 'localhost', port, max_size=_max_msg_size) as server:
+    async with serve(
+        connection_handler, "localhost", port, max_size=_max_msg_size
+    ) as server:
         await server.serve_forever()
+
 
 async def run_client(
     address: str,
     recv_handler: MessageHandler,
     send_queue: MessageQueue,
-    connection_retries = 5
+    connection_retries=5,
 ):
     # message that was dropped due to disconnect or other errors
     async def consumer(websocket: ClientConnection):
@@ -87,7 +90,7 @@ async def run_client(
 
     for attempt in range(connection_retries):
         try:
-            async with connect(f'ws://{address}', max_size=_max_msg_size) as websocket:
+            async with connect(f"ws://{address}", max_size=_max_msg_size) as websocket:
                 await consumer(websocket)
             break
         except OSError:

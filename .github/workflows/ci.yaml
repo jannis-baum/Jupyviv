@@ -1,0 +1,23 @@
+name: CI
+on: push
+
+jobs:
+  format-and-lint:
+    name: Format & lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Run formatting & linting
+        run: |
+          uv run ruff format --diff
+          uv run ruff check --output-format=github .
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Run tests
+        run: uv run pytest
