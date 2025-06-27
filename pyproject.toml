@@ -26,7 +26,12 @@ build-backend = "hatchling.build"
 dev = [
     "ipykernel>=6.29.5",
     "pytest>=8.4.1",
+    "ruff>=0.12.1",
 ]
 
 [tool.pytest.ini_options]
 testpaths = "tests"
+
+[tool.ruff.lint]
+# I: import sorting
+extend-select = ["I"]
