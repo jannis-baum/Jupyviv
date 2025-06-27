@@ -1,0 +1,18 @@
+name: Project setup
+description: Set up uv & Python
+runs:
+  using: composite
+  steps:
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        version: "0.7.15"
+
+    - name: "Set up Python"
+      uses: actions/setup-python@v5
+      with:
+        python-version-file: ".python-version"
+
+    - name: Install the project
+      run: uv sync --locked --all-extras --dev
+      shell: bash
