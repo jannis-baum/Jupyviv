@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import contextmanager
 import json
 import os
 import time
@@ -16,7 +17,8 @@ from jupyviv.shared.utils import dsafe
 _logger = get_logger(__name__)
 _output_msg_types = ['execute_result', 'display_data', 'stream', 'error']
 
-async def _start_kernel(name: str) -> tuple[AsyncKernelManager, AsyncKernelClient]:
+@contextmanager
+def kernel_env():
     original_env = os.environ.copy()
     # set $TERM to support only 16 colors so it doesn't use explicit colors and
     # look horrible in dark mode
@@ -24,14 +26,19 @@ async def _start_kernel(name: str) -> tuple[AsyncKernelManager, AsyncKernelClien
     # see https://github.com/plotly/plotly.py/blob/main/doc/python/renderers.md#setting-the-default-renderer
     os.environ['PLOTLY_RENDERER'] = 'notebook_connected'
     try:
-        return await start_new_async_kernel(kernel_name=name)
-    except NoSuchKernel:
-        raise JupyvivError(f'No such kernel "{name}"')
-    except:
-        raise JupyvivError(f'Failed to launch kernel "{name}"')
+        yield
     finally:
         # reset $TERM after starting kernel
         os.environ = original_env
+
+async def _start_kernel(name: str) -> tuple[AsyncKernelManager, AsyncKernelClient]:
+    with kernel_env():
+        try:
+            return await start_new_async_kernel(kernel_name=name)
+        except NoSuchKernel:
+            raise JupyvivError(f'No such kernel "{name}"')
+        except:
+            raise JupyvivError(f'Failed to launch kernel "{name}"')
 
 # returns message handler & runner for kernel
 async def setup_kernel(name: str, send_queue: MessageQueue) -> tuple[MessageHandlerDict, Callable[[], Awaitable[None]]]:
@@ -85,7 +92,8 @@ async def setup_kernel(name: str, send_queue: MessageQueue) -> tuple[MessageHand
         await km.interrupt_kernel()
 
     async def _restart(_: Message):
-        await km.restart_kernel()
+        with kernel_env():
+            await km.restart_kernel()
 
     async def _get_metadata(message: Message):
         async def _get_language_info():
