@@ -1,10 +1,10 @@
-import asyncio
 import argparse
+import asyncio
 
 from jupyviv.agent import setup_agent_args
 from jupyviv.handler import setup_handler_args
 from jupyviv.shared.lifetime import shutdown_with_parent
-from jupyviv.shared.logs import set_loglevel, log_levels, default_log_level
+from jupyviv.shared.logs import default_log_level, log_levels, set_loglevel
 
 
 async def main(parser, args):

@@ -5,8 +5,8 @@ from websockets.asyncio.connection import Connection
 from websockets.asyncio.server import ServerConnection, serve
 from websockets.exceptions import ConnectionClosed
 
-from jupyviv.shared.messages import MessageHandler, MessageQueue
 from jupyviv.shared.logs import get_logger
+from jupyviv.shared.messages import MessageHandler, MessageQueue
 
 _logger = get_logger(__name__)
 _max_msg_size = 50 * 1000 * 1000  # 50MB

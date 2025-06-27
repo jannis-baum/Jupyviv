@@ -1,7 +1,7 @@
 import json
 import os
-from pathlib import Path
 import shutil
+from pathlib import Path
 from typing import Callable, Union
 
 from jupytext.cell_reader import BaseCellReader

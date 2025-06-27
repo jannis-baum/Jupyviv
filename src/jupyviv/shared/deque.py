@@ -1,7 +1,7 @@
-from asyncio import QueueEmpty
 import asyncio.events
 import collections
-from typing import Callable, Generic, TypeVar, Optional
+from asyncio import QueueEmpty
+from typing import Callable, Generic, Optional, TypeVar
 
 T = TypeVar("T")
 

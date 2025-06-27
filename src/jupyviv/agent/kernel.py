@@ -1,8 +1,8 @@
 import asyncio
-from contextlib import contextmanager
 import json
 import os
 import time
+from contextlib import contextmanager
 from typing import Awaitable, Callable
 
 from jupyter_client.asynchronous.client import AsyncKernelClient
@@ -11,7 +11,7 @@ from jupyter_client.manager import AsyncKernelManager, start_new_async_kernel
 
 from jupyviv.shared.errors import JupyvivError
 from jupyviv.shared.logs import get_logger
-from jupyviv.shared.messages import MessageHandlerDict, MessageQueue, Message
+from jupyviv.shared.messages import Message, MessageHandlerDict, MessageQueue
 from jupyviv.shared.utils import dsafe
 
 _logger = get_logger(__name__)
@@ -49,7 +49,7 @@ async def setup_kernel(
 ) -> tuple[MessageHandlerDict, Callable[[], Awaitable[None]]]:
     _logger.info(f'Starting kernel "{name}"')
     km, kc = await _start_kernel(name)
-    _logger.info(f"Kernel ready")
+    _logger.info("Kernel ready")
 
     id_kernel2jupyviv = dict[str, str]()
 

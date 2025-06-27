@@ -1,4 +1,5 @@
 import json
+
 from jupyviv.handler.sync import JupySync
 from jupyviv.handler.vivify import viv_open, viv_reload
 from jupyviv.shared.messages import Message, MessageHandlerDict, MessageQueue
