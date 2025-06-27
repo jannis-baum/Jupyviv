@@ -39,7 +39,7 @@ async def _start_kernel(name: str) -> tuple[AsyncKernelManager, AsyncKernelClien
             return await start_new_async_kernel(kernel_name=name)
         except NoSuchKernel:
             raise JupyvivError(f'No such kernel "{name}"')
-        except:
+        except Exception:
             raise JupyvivError(f'Failed to launch kernel "{name}"')
 
 
@@ -79,7 +79,7 @@ async def setup_kernel(
                     )
                     continue
 
-                if msg_type in _output_msg_types and type(content) == dict:
+                if msg_type in _output_msg_types and type(content) is dict:
                     data = json.dumps({"output_type": msg_type, **content})
                     send_queue.put(Message(jupyviv_id, "output", data))
                     continue

@@ -8,7 +8,7 @@ def dsafe(d, *k):
     if len(k) > 1:
         return dsafe(dsafe(d, k[0]), *k[1:])
     if len(k) == 1:
-        return d[k[0]] if type(d) == dict and k[0] in d else None
+        return d[k[0]] if type(d) is dict and k[0] in d else None
     return d
 
 

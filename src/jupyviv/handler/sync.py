@@ -35,7 +35,7 @@ class JupySync:
 
             self.format = dsafe(nb_data, "metadata", "language_info", "file_extension")
             if (
-                self.format == None
+                self.format is None
                 or not isinstance(self.format, str)
                 or not self.format.startswith(".")
             ):
@@ -43,7 +43,7 @@ class JupySync:
             self.format = self.format[1:]
 
             kernel_name = dsafe(nb_data, "metadata", "kernelspec", "name")
-            if kernel_name == None or not isinstance(kernel_name, str):
+            if kernel_name is None or not isinstance(kernel_name, str):
                 raise JupyvivError("Invalid metadata kernelspec.name")
             self.kernel_name = str(kernel_name)
 

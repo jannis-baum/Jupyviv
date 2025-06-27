@@ -9,7 +9,7 @@ from jupyviv.handler.vivify import viv_open
 from jupyviv.shared.errors import JupyvivError
 from jupyviv.shared.lifetime import shutdown
 from jupyviv.shared.logs import get_logger
-from jupyviv.shared.messages import Message, MessageHandler, new_queue
+from jupyviv.shared.messages import MessageHandler, new_queue
 from jupyviv.shared.transport.iostream import run as run_editor_com
 from jupyviv.shared.transport.websocket import default_port
 from jupyviv.shared.transport.websocket import run_client as run_agent_com

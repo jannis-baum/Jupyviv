@@ -28,7 +28,7 @@ async def create_notebook(path: str, agent_addr: str):
     async def run_communication():
         try:
             await run_client(agent_addr, handler, send_queue)
-        except:
+        except Exception:
             pass
 
     socket_task = asyncio.create_task(run_communication())
@@ -37,7 +37,7 @@ async def create_notebook(path: str, agent_addr: str):
     send_queue.put(Message("new", "get_metadata"))
     try:
         metadata = await asyncio.wait_for(metadata_queue.get(), timeout=10)
-    except:
+    except Exception:
         raise JupyvivError("Failed to retrieve metadata from agent")
     finally:
         socket_task.cancel()
@@ -57,5 +57,5 @@ async def create_notebook(path: str, agent_addr: str):
         notebook["metadata"] = metadata
         with open(path, "w") as fp:
             json.dump(notebook, fp)
-    except:
+    except Exception:
         raise JupyvivError("Failed to create notebook")

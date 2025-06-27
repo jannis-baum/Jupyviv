@@ -9,7 +9,7 @@ _logger = get_logger(__name__)
 
 try:
     viv_port = int(os.environ.get("VIV_PORT", ""))
-except:
+except Exception:
     viv_port = 31622
 viv_url = f"http://localhost:{viv_port}"
 
