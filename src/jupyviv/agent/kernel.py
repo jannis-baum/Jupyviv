@@ -15,21 +15,23 @@ from jupyviv.shared.messages import MessageHandlerDict, MessageQueue, Message
 from jupyviv.shared.utils import dsafe
 
 _logger = get_logger(__name__)
-_output_msg_types = ['execute_result', 'display_data', 'stream', 'error']
+_output_msg_types = ["execute_result", "display_data", "stream", "error"]
+
 
 @contextmanager
 def kernel_env():
     original_env = os.environ.copy()
     # set $TERM to support only 16 colors so it doesn't use explicit colors and
     # look horrible in dark mode
-    os.environ['TERM'] = 'xterm'
+    os.environ["TERM"] = "xterm"
     # see https://github.com/plotly/plotly.py/blob/main/doc/python/renderers.md#setting-the-default-renderer
-    os.environ['PLOTLY_RENDERER'] = 'notebook_connected'
+    os.environ["PLOTLY_RENDERER"] = "notebook_connected"
     try:
         yield
     finally:
         # reset $TERM after starting kernel
         os.environ = original_env
+
 
 async def _start_kernel(name: str) -> tuple[AsyncKernelManager, AsyncKernelClient]:
     with kernel_env():
@@ -40,11 +42,14 @@ async def _start_kernel(name: str) -> tuple[AsyncKernelManager, AsyncKernelClien
         except:
             raise JupyvivError(f'Failed to launch kernel "{name}"')
 
+
 # returns message handler & runner for kernel
-async def setup_kernel(name: str, send_queue: MessageQueue) -> tuple[MessageHandlerDict, Callable[[], Awaitable[None]]]:
+async def setup_kernel(
+    name: str, send_queue: MessageQueue
+) -> tuple[MessageHandlerDict, Callable[[], Awaitable[None]]]:
     _logger.info(f'Starting kernel "{name}"')
     km, kc = await _start_kernel(name)
-    _logger.info(f'Kernel ready')
+    _logger.info(f"Kernel ready")
 
     id_kernel2jupyviv = dict[str, str]()
 
@@ -53,31 +58,35 @@ async def setup_kernel(name: str, send_queue: MessageQueue) -> tuple[MessageHand
             while True:
                 msg = await kc.get_iopub_msg()
 
-                kernel_id = str(dsafe(msg, 'parent_header', 'msg_id'))
+                kernel_id = str(dsafe(msg, "parent_header", "msg_id"))
                 jupyviv_id = id_kernel2jupyviv.get(kernel_id)
                 if jupyviv_id is None:
                     continue
 
-                msg_type = dsafe(msg, 'msg_type')
-                content = dsafe(msg, 'content')
+                msg_type = dsafe(msg, "msg_type")
+                content = dsafe(msg, "content")
 
-                if msg_type == 'status':
+                if msg_type == "status":
                     # "busy" when starting to execute, "idle" when done
-                    state = str(dsafe(content, 'execution_state'))
-                    send_queue.put(Message(jupyviv_id, 'status', state))
+                    state = str(dsafe(content, "execution_state"))
+                    send_queue.put(Message(jupyviv_id, "status", state))
                     continue
 
-                if msg_type == 'execute_input':
-                    execution_count = str(dsafe(content, 'execution_count'))
-                    send_queue.put(Message(jupyviv_id, 'execute_input', execution_count))
+                if msg_type == "execute_input":
+                    execution_count = str(dsafe(content, "execution_count"))
+                    send_queue.put(
+                        Message(jupyviv_id, "execute_input", execution_count)
+                    )
                     continue
 
                 if msg_type in _output_msg_types and type(content) == dict:
-                    data = json.dumps({ 'output_type': msg_type, **content })
-                    send_queue.put(Message(jupyviv_id, 'output', data))
+                    data = json.dumps({"output_type": msg_type, **content})
+                    send_queue.put(Message(jupyviv_id, "output", data))
                     continue
 
-                _logger.info(f'Received unknown message: {msg_type} with content: {content}')
+                _logger.info(
+                    f"Received unknown message: {msg_type} with content: {content}"
+                )
         except asyncio.CancelledError:
             pass
         finally:
@@ -105,8 +114,8 @@ async def setup_kernel(name: str, send_queue: MessageQueue) -> tuple[MessageHand
                 remaining = timeout - (time.monotonic() - start)
                 try:
                     msg = await asyncio.wait_for(kc.get_shell_msg(), timeout=remaining)
-                    if msg['parent_header'].get('msg_id') == msg_id:
-                        return msg['content']['language_info']
+                    if msg["parent_header"].get("msg_id") == msg_id:
+                        return msg["content"]["language_info"]
                 except asyncio.TimeoutError:
                     break
             return None
@@ -115,23 +124,31 @@ async def setup_kernel(name: str, send_queue: MessageQueue) -> tuple[MessageHand
         name = km.kernel_name
         spec = km.kernel_spec
         if language_info is None or name is None or spec is None:
-            send_queue.put(Message(message.id, 'spec', 'null'))
+            send_queue.put(Message(message.id, "spec", "null"))
             return
 
-        send_queue.put(Message(message.id, 'metadata', json.dumps({
-            'kernelspec': {
-                'display_name': spec.display_name,
-                'language': spec.language,
-                'name': name,
-            },
-            'language_info': language_info
-        })))
+        send_queue.put(
+            Message(
+                message.id,
+                "metadata",
+                json.dumps(
+                    {
+                        "kernelspec": {
+                            "display_name": spec.display_name,
+                            "language": spec.language,
+                            "name": name,
+                        },
+                        "language_info": language_info,
+                    }
+                ),
+            )
+        )
 
     handlers = {
-        'execute': _execute,
-        'interrupt': _interrupt,
-        'restart': _restart,
-        'get_metadata': _get_metadata
+        "execute": _execute,
+        "interrupt": _interrupt,
+        "restart": _restart,
+        "get_metadata": _get_metadata,
     }
 
     return (handlers, _kernel_loop)

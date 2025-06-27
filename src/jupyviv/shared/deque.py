@@ -3,7 +3,8 @@ import asyncio.events
 import collections
 from typing import Callable, Generic, TypeVar, Optional
 
-T = TypeVar('T')
+T = TypeVar("T")
+
 
 # taken & adjusted from asyncio.Queue
 # removes all features from Queue we don't need, adds opposite putleft
@@ -30,7 +31,7 @@ class Deque(Generic[T]):
             self.change_handler(self._deque)
 
     def empty(self):
-        '''Return True if the deque is empty, False otherwise.'''
+        """Return True if the deque is empty, False otherwise."""
         return not self._deque
 
     def put(self, item: T):
@@ -44,8 +45,8 @@ class Deque(Generic[T]):
         self._wakeup_next(self._getters)
 
     async def popleft(self) -> T:
-        '''Remove and return an item from the deque.
-        If deque is empty, wait until an item is available.'''
+        """Remove and return an item from the deque.
+        If deque is empty, wait until an item is available."""
         while self.empty():
             getter = self._loop.create_future()
             self._getters.append(getter)
@@ -68,8 +69,8 @@ class Deque(Generic[T]):
         return self.popleft_nowait()
 
     def popleft_nowait(self) -> T:
-        '''Remove and return an item from the deque.
-        Return an item if one is immediately available, else raise QueueEmpty. '''
+        """Remove and return an item from the deque.
+        Return an item if one is immediately available, else raise QueueEmpty."""
         if self.empty():
             raise QueueEmpty
         item = self._deque.popleft()
