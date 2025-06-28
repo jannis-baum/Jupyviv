@@ -83,6 +83,9 @@ class JupySync:
         script_mtime = script_stat.st_mtime_ns
         script_atime = script_stat.st_atime_ns
 
+        # save original metadata so it survives the round trip through script sync
+        metadata = {cell["id"]: cell["metadata"] for cell in self._read_nb()["cells"]}
+
         # wrap BaseCellReader.read to save line numbers for each cell.
         # first we map line numbers to cell indices because JupyText uses
         # different ids internally
@@ -123,6 +126,15 @@ class JupySync:
         # restore original state of script file (see above)
         script_file.write_bytes(script_content)
         os.utime(self.script, ns=(script_atime, script_mtime))
+
+        # restore metadata
+        def _restore_metadata(cells):
+            for cell in cells:
+                if cell["id"] in metadata:
+                    cell["metadata"] = metadata[cell["id"]]
+            return cells
+
+        self.modify_all_cells(_restore_metadata)
 
     # sync notebook copy to original (e.g. after setting exec data)
     # script: sync script to notebook copy first
