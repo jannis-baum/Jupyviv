@@ -87,3 +87,15 @@ def test_add_code_script(jupy_sync: JupySync):
     assert script_file.read_bytes() == content_before
     assert stat_after.st_mtime_ns == stat_before.st_mtime_ns
     assert stat_after.st_atime_ns == stat_before.st_atime_ns
+
+
+def test_cell_ids(jupy_sync: JupySync):
+    code = write_code(jupy_sync)
+    with open(jupy_sync.script, "r") as fp:
+        n_lines = len(fp.readlines())
+
+    jupy_sync.sync()
+
+    id = jupy_sync.all_ids_and_code()[0][0]
+    assert jupy_sync.id_at_line(n_lines) == id
+    assert jupy_sync.code_for_id(id) == code
