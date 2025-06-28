@@ -83,6 +83,9 @@ class JupySync:
         script_mtime = script_stat.st_mtime_ns
         script_atime = script_stat.st_atime_ns
 
+        # save original metadata so it survives the round trip through script sync
+        metadata = {cell["id"]: cell["metadata"] for cell in self._read_nb()["cells"]}
+
         # wrap BaseCellReader.read to save line numbers for each cell.
         # first we map line numbers to cell indices because JupyText uses
         # different ids internally
@@ -124,6 +127,15 @@ class JupySync:
         script_file.write_bytes(script_content)
         os.utime(self.script, ns=(script_atime, script_mtime))
 
+        # restore metadata
+        def _restore_metadata(cells):
+            for cell in cells:
+                if cell["id"] in metadata:
+                    cell["metadata"] = metadata[cell["id"]]
+            return cells
+
+        self.modify_all_cells(_restore_metadata)
+
     # sync notebook copy to original (e.g. after setting exec data)
     # script: sync script to notebook copy first
     def sync(self, script: bool = True):
@@ -148,25 +160,25 @@ class JupySync:
                 return idx, nb
         raise JupyvivError(f"Cell with id {id} not found")
 
+    def _code_for_cell(self, cell: dict) -> str:
+        if not self._is_code_cell(cell):
+            raise JupyvivError("Not a code cell")
+        return _multiline_string(cell["source"])
+
     def id_at_line(self, line: int) -> str:
         cell_id = self._line2cell[line]
         if cell_id is None:
             raise LookupError(f"No cell at line {line}")
         return cell_id
 
-    def code_for_cell(self, cell: dict) -> str:
-        if not self._is_code_cell(cell):
-            raise JupyvivError("Not a code cell")
-        return _multiline_string(cell["source"])
-
     def code_for_id(self, id: str) -> str:
         idx, nb = self._find_id(id)
-        return self.code_for_cell(nb["cells"][idx])
+        return self._code_for_cell(nb["cells"][idx])
 
     def all_ids_and_code(self) -> list[tuple[str, str]]:
         cells = self._read_nb()["cells"]
         return [
-            (cell["id"], self.code_for_cell(cell))
+            (cell["id"], self._code_for_cell(cell))
             for cell in cells
             if self._is_code_cell(cell)
         ]

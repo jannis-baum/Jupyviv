@@ -6,6 +6,8 @@ readme = "README.md"
 authors = [
     { name = "Jannis Baum" }
 ]
+# support from 3.9 but pinned version is at 3.10 because of urllib3 warning on
+# macOS
 requires-python = ">=3.9"
 dependencies = [
     "jupyter-client>=8.6.3",
