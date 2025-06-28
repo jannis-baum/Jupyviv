@@ -52,7 +52,8 @@ def test_creates_files(jupy_sync: JupySync):
     assert os.path.exists(jupy_sync.script)
 
 
-def test_add_code(jupy_sync: JupySync):
+# code is synced into notebook file
+def test_add_code_notebook(jupy_sync: JupySync):
     cells_before = jupy_sync.all_ids_and_code()
     assert len(cells_before) == 0
 
@@ -64,3 +65,21 @@ def test_add_code(jupy_sync: JupySync):
     cells_after = jupy_sync.all_ids_and_code()
     assert len(cells_after) == 1
     assert cells_after[0][1] == code
+
+
+# script file isn't modified in syncing
+def test_add_code_script(jupy_sync: JupySync):
+    code = "print('hehe')"
+    with open(jupy_sync.script, "a") as fp:
+        fp.write(code + "\n")
+    script_file = pathlib.Path(jupy_sync.script)
+
+    content_before = script_file.read_bytes()
+    stat_before = script_file.stat()
+
+    jupy_sync.sync()
+    stat_after = script_file.stat()
+
+    assert script_file.read_bytes() == content_before
+    assert stat_after.st_mtime_ns == stat_before.st_mtime_ns
+    assert stat_after.st_atime_ns == stat_before.st_atime_ns
