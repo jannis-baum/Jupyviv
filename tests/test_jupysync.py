@@ -52,14 +52,20 @@ def test_creates_files(jupy_sync: JupySync):
     assert os.path.exists(jupy_sync.script)
 
 
+def write_code(
+    jupy_sync: JupySync, code: str = "print('hehe')", linebreak: bool = True
+) -> str:
+    with open(jupy_sync.script, "a") as fp:
+        fp.write(code + "\n" if linebreak else code)
+    return code
+
+
 # code is synced into notebook file
 def test_add_code_notebook(jupy_sync: JupySync):
     cells_before = jupy_sync.all_ids_and_code()
     assert len(cells_before) == 0
 
-    code = "print('hehe')"
-    with open(jupy_sync.script, "a") as fp:
-        fp.write(code + "\n")
+    code = write_code(jupy_sync)
     jupy_sync.sync()
 
     cells_after = jupy_sync.all_ids_and_code()
@@ -69,15 +75,13 @@ def test_add_code_notebook(jupy_sync: JupySync):
 
 # script file isn't modified in syncing
 def test_add_code_script(jupy_sync: JupySync):
-    code = "print('hehe')"
-    with open(jupy_sync.script, "a") as fp:
-        fp.write(code + "\n")
+    write_code(jupy_sync)
     script_file = pathlib.Path(jupy_sync.script)
-
     content_before = script_file.read_bytes()
     stat_before = script_file.stat()
 
     jupy_sync.sync()
+
     stat_after = script_file.stat()
 
     assert script_file.read_bytes() == content_before
