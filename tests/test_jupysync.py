@@ -50,3 +50,17 @@ def test_creates_files(jupy_sync: JupySync):
     assert os.path.exists(jupy_sync.nb_original)
     assert os.path.exists(jupy_sync.nb_copy)
     assert os.path.exists(jupy_sync.script)
+
+
+def test_add_code(jupy_sync: JupySync):
+    cells_before = jupy_sync.all_ids_and_code()
+    assert len(cells_before) == 0
+
+    code = "print('hehe')"
+    with open(jupy_sync.script, "a") as fp:
+        fp.write(code + "\n")
+    jupy_sync.sync()
+
+    cells_after = jupy_sync.all_ids_and_code()
+    assert len(cells_after) == 1
+    assert cells_after[0][1] == code
