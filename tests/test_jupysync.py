@@ -1,6 +1,7 @@
 import json
 import os
 import pathlib
+import uuid
 
 import pytest
 
@@ -99,3 +100,34 @@ def test_cell_ids(jupy_sync: JupySync):
     id = jupy_sync.all_ids_and_code()[0][0]
     assert jupy_sync.id_at_line(n_lines) == id
     assert jupy_sync.code_for_id(id) == code
+
+
+def test_metadata_preservation(jupy_sync: JupySync):
+    write_code(jupy_sync)
+    jupy_sync.sync()
+    id = jupy_sync.all_ids_and_code()[0][0]
+
+    # add metadata
+    unique_content = str(uuid.uuid4())
+    jupy_sync.modify_at_id(
+        id,
+        lambda cell: {
+            **cell,
+            "metadata": {**cell["metadata"], "jupyviv": {"hehe": unique_content}},
+        },
+    )
+    jupy_sync.sync(script=False)
+
+    # helper to check that metadata is there
+    def _check_metadata():
+        idx, nb = jupy_sync._find_id(id)
+        cell = nb["cells"][idx]
+        assert unique_content in repr(cell["metadata"])
+
+    # check that metadata is there before adding code
+    _check_metadata()
+
+    # add code to cell & run again
+    write_code(jupy_sync)
+    jupy_sync.sync(script=True)
+    _check_metadata()
