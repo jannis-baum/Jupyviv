@@ -3,3 +3,7 @@ __pycache__/
 .eggs
 dist
 build
+
+.venv
+.pytest_cache
+.ruff_cache
