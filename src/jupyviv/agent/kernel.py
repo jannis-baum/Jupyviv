@@ -2,12 +2,11 @@ import asyncio
 import json
 import os
 import time
-from contextlib import contextmanager
 from typing import Awaitable, Callable
 
 from jupyter_client.asynchronous.client import AsyncKernelClient
+from jupyter_client.ioloop.manager import AsyncIOLoopKernelManager
 from jupyter_client.kernelspec import NoSuchKernel
-from jupyter_client.manager import AsyncKernelManager, start_new_async_kernel
 
 from jupyviv.shared.errors import JupyvivError
 from jupyviv.shared.logs import get_logger
@@ -18,29 +17,42 @@ _logger = get_logger(__name__)
 _output_msg_types = ["execute_result", "display_data", "stream", "error"]
 
 
-@contextmanager
-def kernel_env():
-    original_env = os.environ.copy()
+# KernelManager.update_env doesn't work so we do this
+def _setup_env():
     # set $TERM to support only 16 colors so it doesn't use explicit colors and
     # look horrible in dark mode
     os.environ["TERM"] = "xterm"
     # see https://github.com/plotly/plotly.py/blob/main/doc/python/renderers.md#setting-the-default-renderer
     os.environ["PLOTLY_RENDERER"] = "notebook_connected"
+
+
+# adapted from `from jupyter_client.manager import start_new_async_kernel` but
+# for AsyncIOLoopKernelManager because it monitors kernel crashes
+async def _start_kernel(
+    name: str, startup_timeout: float = 60
+) -> tuple[AsyncIOLoopKernelManager, AsyncKernelClient]:
     try:
-        yield
-    finally:
-        # reset $TERM after starting kernel
-        os.environ = original_env
+        km: AsyncIOLoopKernelManager = AsyncIOLoopKernelManager(kernel_name=name)
+    except NoSuchKernel:
+        raise JupyvivError(f'No such kernel "{name}"')
 
+    await km.start_kernel()
 
-async def _start_kernel(name: str) -> tuple[AsyncKernelManager, AsyncKernelClient]:
-    with kernel_env():
-        try:
-            return await start_new_async_kernel(kernel_name=name)
-        except NoSuchKernel:
-            raise JupyvivError(f'No such kernel "{name}"')
-        except Exception:
-            raise JupyvivError(f'Failed to launch kernel "{name}"')
+    def _on_restart():
+        _logger.warning("Kernel died, restarting")
+
+    km.add_restart_callback(_on_restart)
+
+    kc = km.client()
+    kc.start_channels()
+    try:
+        await kc.wait_for_ready(timeout=startup_timeout)
+    except Exception:
+        kc.stop_channels()
+        await km.shutdown_kernel()
+        raise JupyvivError(f'Failed to launch kernel "{name}"')
+
+    return (km, kc)
 
 
 # returns message handler & runner for kernel
@@ -48,6 +60,7 @@ async def setup_kernel(
     name: str, send_queue: MessageQueue
 ) -> tuple[MessageHandlerDict, Callable[[], Awaitable[None]]]:
     _logger.info(f'Starting kernel "{name}"')
+    _setup_env()
     km, kc = await _start_kernel(name)
     _logger.info("Kernel ready")
 
@@ -101,8 +114,7 @@ async def setup_kernel(
         await km.interrupt_kernel()
 
     async def _restart(_: Message):
-        with kernel_env():
-            await km.restart_kernel()
+        await km.restart_kernel()
 
     async def _get_metadata(message: Message):
         async def _get_language_info():
