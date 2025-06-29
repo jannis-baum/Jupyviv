@@ -2,7 +2,6 @@ import asyncio
 import json
 import os
 import time
-from contextlib import contextmanager
 from typing import Awaitable, Callable
 
 from jupyter_client.asynchronous.client import AsyncKernelClient
@@ -19,19 +18,12 @@ _output_msg_types = ["execute_result", "display_data", "stream", "error"]
 
 
 # KernelManager.update_env doesn't work so we do this
-@contextmanager
-def _kernel_env():
-    original_env = os.environ.copy()
+def _setup_env():
     # set $TERM to support only 16 colors so it doesn't use explicit colors and
     # look horrible in dark mode
     os.environ["TERM"] = "xterm"
     # see https://github.com/plotly/plotly.py/blob/main/doc/python/renderers.md#setting-the-default-renderer
     os.environ["PLOTLY_RENDERER"] = "notebook_connected"
-    try:
-        yield
-    finally:
-        # reset $TERM after starting kernel
-        os.environ = original_env
 
 
 # adapted from `from jupyter_client.manager import start_new_async_kernel` but
@@ -68,8 +60,8 @@ async def setup_kernel(
     name: str, send_queue: MessageQueue
 ) -> tuple[MessageHandlerDict, Callable[[], Awaitable[None]]]:
     _logger.info(f'Starting kernel "{name}"')
-    with _kernel_env():
-        km, kc = await _start_kernel(name)
+    _setup_env()
+    km, kc = await _start_kernel(name)
     _logger.info("Kernel ready")
 
     id_kernel2jupyviv = dict[str, str]()
@@ -122,8 +114,7 @@ async def setup_kernel(
         await km.interrupt_kernel()
 
     async def _restart(_: Message):
-        with _kernel_env():
-            await km.restart_kernel()
+        await km.restart_kernel()
 
     async def _get_metadata(message: Message):
         async def _get_language_info():
