@@ -20,7 +20,7 @@ _output_msg_types = ["execute_result", "display_data", "stream", "error"]
 
 # KernelManager.update_env doesn't work so we do this
 @contextmanager
-def kernel_env():
+def _kernel_env():
     original_env = os.environ.copy()
     # set $TERM to support only 16 colors so it doesn't use explicit colors and
     # look horrible in dark mode
@@ -62,7 +62,7 @@ async def setup_kernel(
     name: str, send_queue: MessageQueue
 ) -> tuple[MessageHandlerDict, Callable[[], Awaitable[None]]]:
     _logger.info(f'Starting kernel "{name}"')
-    with kernel_env():
+    with _kernel_env():
         km, kc = await _start_kernel(name)
     _logger.info("Kernel ready")
 
@@ -116,7 +116,7 @@ async def setup_kernel(
         await km.interrupt_kernel()
 
     async def _restart(_: Message):
-        with kernel_env():
+        with _kernel_env():
             await km.restart_kernel()
 
     async def _get_metadata(message: Message):
