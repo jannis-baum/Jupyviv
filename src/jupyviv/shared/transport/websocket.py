@@ -52,7 +52,8 @@ async def _connection_handler(
     await sender_task
 
 
-default_port = 8000
+# one after vivify
+default_port = 31623
 
 
 async def run_server(port: int, recv_handler: MessageHandler, send_queue: MessageQueue):
