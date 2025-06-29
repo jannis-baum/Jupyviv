@@ -6,8 +6,8 @@ from contextlib import contextmanager
 from typing import Awaitable, Callable
 
 from jupyter_client.asynchronous.client import AsyncKernelClient
+from jupyter_client.ioloop.manager import AsyncIOLoopKernelManager
 from jupyter_client.kernelspec import NoSuchKernel
-from jupyter_client.manager import AsyncKernelManager, start_new_async_kernel
 
 from jupyviv.shared.errors import JupyvivError
 from jupyviv.shared.logs import get_logger
@@ -33,10 +33,31 @@ def kernel_env():
         os.environ = original_env
 
 
-async def _start_kernel(name: str) -> tuple[AsyncKernelManager, AsyncKernelClient]:
+# same as `from jupyter_client.manager import start_new_async_kernel`
+# but for AsyncIOLoopKernelManager because it monitors kernel crashes
+async def start_new_async_ioloop_kernel(
+    kernel_name: str, startup_timeout: float = 60
+) -> tuple[AsyncIOLoopKernelManager, AsyncKernelClient]:
+    km = AsyncIOLoopKernelManager(kernel_name=kernel_name)
+    await km.start_kernel()
+    kc = km.client()
+    kc.start_channels()
+    try:
+        await kc.wait_for_ready(timeout=startup_timeout)
+    except RuntimeError:
+        kc.stop_channels()
+        await km.shutdown_kernel()
+        raise
+
+    return (km, kc)
+
+
+async def _start_kernel(
+    name: str,
+) -> tuple[AsyncIOLoopKernelManager, AsyncKernelClient]:
     with kernel_env():
         try:
-            return await start_new_async_kernel(kernel_name=name)
+            return await start_new_async_ioloop_kernel(kernel_name=name)
         except NoSuchKernel:
             raise JupyvivError(f'No such kernel "{name}"')
         except Exception:
