@@ -45,6 +45,12 @@ async def _start_kernel(
         raise JupyvivError(f'No such kernel "{name}"')
 
     await km.start_kernel()
+
+    def _on_restart():
+        _logger.warning("Kernel died, restarting")
+
+    km.add_restart_callback(_on_restart)
+
     kc = km.client()
     kc.start_channels()
     try:
