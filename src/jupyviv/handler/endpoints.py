@@ -2,6 +2,7 @@ import json
 
 from jupyviv.handler.sync import JupySync
 from jupyviv.handler.vivify import viv_open, viv_reload
+from jupyviv.shared.errors import JupyvivError
 from jupyviv.shared.messages import Message, MessageHandlerDict, MessageQueue
 
 
@@ -29,6 +30,24 @@ def setup_endpoints(
         code = jupy_sync.code_for_id(cell_id)
         send_queue_agent.put(Message(cell_id, "execute", code))
 
+    async def run_between(message: Message):
+        args = message.args.split(" ")
+        if len(args) != 2:
+            raise JupyvivError("Expected 2 arguments")
+        start_i = int(args[0])
+        end_i = int(args[1])
+        # dicts preserve order and can't have duplicate keys (-> "ordered set")
+        cell_ids = dict.fromkeys(
+            jupy_sync.id_at_line(line_i) for line_i in range(start_i, end_i + 1)
+        )
+        for cell_id in cell_ids:
+            # code_for_id on non-code cell raises error
+            try:
+                code = jupy_sync.code_for_id(cell_id)
+            except JupyvivError:
+                continue
+            send_queue_agent.put(Message(cell_id, "execute", code))
+
     async def run_all(_: Message):
         ids_and_code = jupy_sync.all_ids_and_code()
         for cell_id, code in ids_and_code:
@@ -53,6 +72,7 @@ def setup_endpoints(
         "viv_open": open_notebook,
         "sync": sync,
         "run_at": run_at,
+        "run_between": run_between,
         "run_all": run_all,
         "interrupt": interrupt,
         "restart": restart,
