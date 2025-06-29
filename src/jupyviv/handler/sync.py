@@ -211,6 +211,10 @@ class JupySync:
                 if not self._is_code_cell(cell):
                     continue
                 cell["execution_count"] = idx
+                if "outputs" in cell:
+                    for output in cell["outputs"]:
+                        if "execution_count" in output:
+                            output["execution_count"] = idx
                 idx += 1
             return cells
 
