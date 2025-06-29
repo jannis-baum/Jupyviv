@@ -18,6 +18,7 @@ _logger = get_logger(__name__)
 _output_msg_types = ["execute_result", "display_data", "stream", "error"]
 
 
+# KernelManager.update_env doesn't work so we do this
 @contextmanager
 def kernel_env():
     original_env = os.environ.copy()
@@ -33,35 +34,27 @@ def kernel_env():
         os.environ = original_env
 
 
-# same as `from jupyter_client.manager import start_new_async_kernel`
-# but for AsyncIOLoopKernelManager because it monitors kernel crashes
-async def start_new_async_ioloop_kernel(
-    kernel_name: str, startup_timeout: float = 60
+# adapted from `from jupyter_client.manager import start_new_async_kernel` but
+# for AsyncIOLoopKernelManager because it monitors kernel crashes
+async def _start_kernel(
+    name: str, startup_timeout: float = 60
 ) -> tuple[AsyncIOLoopKernelManager, AsyncKernelClient]:
-    km = AsyncIOLoopKernelManager(kernel_name=kernel_name)
+    try:
+        km: AsyncIOLoopKernelManager = AsyncIOLoopKernelManager(kernel_name=name)
+    except NoSuchKernel:
+        raise JupyvivError(f'No such kernel "{name}"')
+
     await km.start_kernel()
     kc = km.client()
     kc.start_channels()
     try:
         await kc.wait_for_ready(timeout=startup_timeout)
-    except RuntimeError:
+    except Exception:
         kc.stop_channels()
         await km.shutdown_kernel()
-        raise
+        raise JupyvivError(f'Failed to launch kernel "{name}"')
 
     return (km, kc)
-
-
-async def _start_kernel(
-    name: str,
-) -> tuple[AsyncIOLoopKernelManager, AsyncKernelClient]:
-    with kernel_env():
-        try:
-            return await start_new_async_ioloop_kernel(kernel_name=name)
-        except NoSuchKernel:
-            raise JupyvivError(f'No such kernel "{name}"')
-        except Exception:
-            raise JupyvivError(f'Failed to launch kernel "{name}"')
 
 
 # returns message handler & runner for kernel
@@ -69,7 +62,8 @@ async def setup_kernel(
     name: str, send_queue: MessageQueue
 ) -> tuple[MessageHandlerDict, Callable[[], Awaitable[None]]]:
     _logger.info(f'Starting kernel "{name}"')
-    km, kc = await _start_kernel(name)
+    with kernel_env():
+        km, kc = await _start_kernel(name)
     _logger.info("Kernel ready")
 
     id_kernel2jupyviv = dict[str, str]()
