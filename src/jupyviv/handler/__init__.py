@@ -31,9 +31,17 @@ async def _launch_agent(kernel_name: str, log: str):
     asyncio.create_task(_handle_agent_stop())
 
 
+def get_agent_addr(arg: str | None) -> str:
+    if arg is None or arg == "":
+        return f"localhost:{default_port}"
+    if ":" in arg:
+        return arg
+    return f"{arg}:{default_port}"
+
+
 async def main(args):
     should_launch_agent = args.agent is None
-    agent_addr = args.agent or f"localhost:{default_port}"
+    agent_addr = get_agent_addr(args.agent)
     if args.new is not None:
         # ensure agent is running & new argument is correct
         if should_launch_agent:
@@ -114,7 +122,10 @@ def setup_handler_args(subparsers: Subparsers):
     parser_handler = subparsers.add_parser("handler", help="Run the handler")
     parser_handler.add_argument("notebook", type=str)
     parser_handler.add_argument(
-        "--agent", type=str, help="Address to connect to a running agent"
+        "--agent",
+        type=str,
+        nargs="?",
+        help="Address to connect to a running agent. Omitting port uses the default port. Providing an empty address uses localhost with the default port.",
     )
     parser_handler.add_argument(
         "--new",
