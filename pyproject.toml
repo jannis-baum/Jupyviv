@@ -16,6 +16,8 @@ dependencies = [
     "requests>=2.32.3",
     "websockets>=15.0.1",
 ]
+license = "GPL-3.0-or-later"
+license-files = ["LICEN[CS]E*"]
 
 [project.scripts]
 jupyviv = "jupyviv:cli"
