@@ -1,6 +1,5 @@
 [project]
 name = "jupyviv"
-version = "0.1.0"
 description = "Jupyter server for plain text editors and Vivify"
 readme = "README.md"
 authors = [
@@ -16,19 +15,31 @@ dependencies = [
     "requests>=2.32.3",
     "websockets>=15.0.1",
 ]
+license = "GPL-3.0-or-later"
+license-files = ["LICEN[CS]E*"]
+dynamic = [
+    "version"
+]
+
+[project.urls]
+Homepage = "https://github.com/jannis-baum/Jupyviv"
 
 [project.scripts]
 jupyviv = "jupyviv:cli"
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
+
+[tool.hatch.version]
+source = "vcs"
 
 [dependency-groups]
 dev = [
     "ipykernel>=6.29.5",
     "pytest>=8.4.1",
     "ruff>=0.12.1",
+    "twine>=6.1.0",
 ]
 
 [tool.pytest.ini_options]
