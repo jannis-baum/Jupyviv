@@ -1,6 +1,6 @@
 [project]
 name = "jupyviv"
-description = "Jupyter server for plain text editors and Vivify"
+description = "Edit and run Jupyter Notebooks with plain text editors like Neovim while live viewing them with Vivify "
 readme = "README.md"
 authors = [
     { name = "Jannis Baum" }
