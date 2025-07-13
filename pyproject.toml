@@ -19,6 +19,9 @@ dependencies = [
 license = "GPL-3.0-or-later"
 license-files = ["LICEN[CS]E*"]
 
+[project.urls]
+Homepage = "https://github.com/jannis-baum/Jupyviv"
+
 [project.scripts]
 jupyviv = "jupyviv:cli"
 
