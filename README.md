@@ -1,5 +1,11 @@
 # Jupyviv
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/jannis-baum/Jupyviv/refs/heads/assets/showcase-dark.gif">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/jannis-baum/Jupyviv/refs/heads/assets/showcase-light.gif">
+  <img alt="Showcase" src="https://raw.githubusercontent.com/jannis-baum/Jupyviv/refs/heads/assets/showcase-dark.gif">
+</picture>
+
 Jupyviv is a solution for working with and running Jupyter Notebooks from plain
 text editors such as Neovim while using
 [Vivify](https://github.com/jannis-baum/Vivify) as a live viewer of the full
