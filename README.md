@@ -6,9 +6,9 @@ text editors such as Neovim while using
 Notebook in the browser.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/jannis-baum/Jupyviv/refs/heads/assets/showcase-dark.gif">
-  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/jannis-baum/Jupyviv/refs/heads/assets/showcase-light.gif">
-  <img alt="Showcase" src="https://raw.githubusercontent.com/jannis-baum/Jupyviv/refs/heads/assets/showcase-dark.gif">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/jannis-baum/assets/refs/heads/main/Jupyviv/showcase-dark.gif">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/jannis-baum/assets/refs/heads/main/Jupyviv/showcase-light.gif">
+  <img alt="Showcase" src="https://raw.githubusercontent.com/jannis-baum/assets/refs/heads/main/Jupyviv/showcase-dark.gif">
 </picture>
 
 ## Features
