@@ -11,6 +11,12 @@ Notebook in the browser.
   <img alt="Showcase" src="https://raw.githubusercontent.com/jannis-baum/assets/refs/heads/main/Jupyviv/showcase-dark.gif">
 </picture>
 
+> [!NOTE]
+> Jupyviv is very new. I have been using it myself in my daily workflow for a
+> few months now but there may be bugs that make it hard for you to use it. If
+> this happens, don't hesitate to open an issue, we'll find a solution and fix
+> it!
+
 ## Features
 
 Aside from allowing you to **use your favorite editor with Jupyter Notebooks**,
