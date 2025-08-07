@@ -36,7 +36,7 @@ decoupled from file handling and your editor:
 ## Install
 
 ```sh
-pip install git+https://github.com/jannis-baum/Jupyviv.git
+pip install jupyviv
 ```
 
 ## Usage
