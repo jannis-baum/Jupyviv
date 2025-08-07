@@ -41,9 +41,9 @@ pip install git+https://github.com/jannis-baum/Jupyviv.git
 
 ## Usage
 
-Using Jupyviv requires [Vivify](github.com/jannis-baum/Vivify) and (somewhat
-optionally) a plugin for integration with your editor. See below for a list of
-existing editor integration.
+Using Jupyviv requires [Vivify](github.com/jannis-baum/Vivify) and a plugin for
+integration with your editor. See below for a list of existing editor
+integration.
 
 Jupyviv itself is made up of two components:
 
