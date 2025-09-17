@@ -1,7 +1,7 @@
 import json
 
 from jupyviv.handler.sync import JupySync
-from jupyviv.handler.vivify import viv_open, viv_reload
+from jupyviv.handler.vivify import viv_open
 from jupyviv.shared.errors import JupyvivError
 from jupyviv.shared.messages import Message, MessageHandlerDict, MessageQueue
 
@@ -12,7 +12,6 @@ def setup_endpoints(
 ) -> tuple[MessageHandlerDict, MessageHandlerDict]:
     def _sync(script: bool):
         jupy_sync.sync(script)
-        viv_reload(jupy_sync.nb_original)
 
     # EDITOR ENDPOINTS ---------------------------------------------------------
     async def get_script(message: Message):
